@@ -206,3 +206,54 @@ Work in a strict loop: inspect → implement the smallest coherent slice → tes
 - Do not mark external services as connected without successful OAuth/API verification.
 - Do not claim full offline capability until the exact workflow succeeds with networking disabled.
 - Do not claim complete release readiness until security, device, integration and deployment acceptance checks pass.
+
+
+## 11. Additional ecosystem modules to include in the complete scope
+
+These modules extend the initial scope so the platform can grow into a broad super-app and enterprise ecosystem. They remain PLANNED until implemented and verified.
+
+### J. Embedded apps and service directory
+- In-app directory/catalogue of approved mini-apps, services and integrations.
+- Embedded web experiences with isolated permissions, clear origin identity and safe navigation.
+- App registration, review, versioning, permissions, install/enable/disable and removal.
+- Deep links, universal links and a consistent navigation shell.
+- Plugin/extension SDK and documented APIs; sandbox untrusted extensions.
+- No arbitrary code execution inside the main app.
+
+### K. Finance, forex and trading information
+- Financial education, glossary, tutorials and risk-awareness content.
+- Market watchlists, currency/forex rates, charts, historical data and alerts where licensed data is available.
+- Portfolio tracking and paper/demo trading before any live brokerage feature.
+- Broker connectivity only through official APIs, with explicit user authorization and country/provider eligibility checks.
+- No guaranteed returns, fabricated live prices or unapproved automated trading. Live order execution, if ever supported, requires strong confirmation, audit, risk controls and legal/compliance review.
+
+### L. Enterprise and organization suite
+- Organization workspaces, teams, invitations and role-based access.
+- Company pages, internal communities, knowledge bases and document collaboration.
+- Business AI agents, workflows, approvals and task management.
+- Enterprise administration, audit, retention, access policies and optional SSO.
+- Tenant isolation and organization-level billing/configuration where applicable.
+
+### M. Real-time communication and live experiences
+- Audio/video calls, meeting rooms, screen sharing and live streaming as separately scoped capabilities.
+- Presence, call invitations, recording consent, moderation and network-quality handling.
+- Push notifications and real-time delivery infrastructure.
+- Verify bandwidth, device compatibility and privacy before release.
+
+### N. Location, bookings and logistics
+- Maps and location-aware discovery with explicit location permissions.
+- Appointment/event/venue booking workflows where providers support them.
+- Delivery, pickup, order tracking and service-provider dispatch only where operational partners exist.
+- Location retention controls and clear user consent.
+
+### O. Customer support and developer ecosystem
+- Help center, in-app support requests, feedback and dispute handling.
+- Public developer documentation, API keys/scopes, webhooks, SDKs and sandbox environment.
+- Integration directory, partner onboarding, app review and API usage limits.
+- Status page, incident communication and service-level monitoring.
+
+### P. Monetization and trust
+- Subscription plans, entitlements, invoices and usage limits.
+- Creator/business monetization subject to payment-provider availability and local law.
+- Anti-fraud, identity/trust signals, appeals and dispute resolution.
+- Tax, consumer protection, privacy and financial compliance review for each launch country.
