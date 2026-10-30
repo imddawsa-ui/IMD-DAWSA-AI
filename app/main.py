@@ -54,6 +54,21 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class ProfileUpdate(BaseModel):
+    display_name: str | None = Field(default=None, min_length=2, max_length=60)
+    handle: str | None = Field(default=None, min_length=3, max_length=30)
+    bio: str | None = Field(default=None, max_length=280)
+
+
+class PostCreate(BaseModel):
+    content: str = Field(min_length=1, max_length=5000)
+    visibility: str = Field(default="public", pattern="^(public|followers|private)$")
+
+
+class CommentCreate(BaseModel):
+    content: str = Field(min_length=1, max_length=1000)
+
+
 def check_access(token: str | None):
     if settings.api_access_token and not secrets.compare_digest(token or "", settings.api_access_token):
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -147,6 +162,179 @@ async def me(authorization: str | None = Header(default=None)):
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required")
     return {"user": user}
+
+
+@app.get("/api/social/feed")
+async def social_feed(
+    limit: int = 30,
+    authorization: str | None = Header(default=None),
+):
+    user = current_user(authorization)
+    user_id = user["id"] if user else -1
+    with connect() as db:
+        rows = db.execute("""
+            SELECT p.id, p.content, p.visibility, p.created_at, u.id AS author_id,
+                   u.display_name, u.handle,
+                   (SELECT COUNT(*) FROM post_likes l WHERE l.post_id = p.id) AS like_count,
+                   (SELECT COUNT(*) FROM post_comments c WHERE c.post_id = p.id) AS comment_count,
+                   EXISTS(SELECT 1 FROM post_likes l WHERE l.post_id = p.id AND l.user_id = ?) AS liked_by_me
+            FROM posts p JOIN users u ON u.id = p.user_id
+            WHERE p.visibility = 'public'
+               OR (p.visibility = 'followers' AND EXISTS(
+                    SELECT 1 FROM follows f WHERE f.follower_id = ? AND f.following_id = p.user_id
+               ))
+               OR (p.user_id = ?)
+            ORDER BY p.id DESC LIMIT ?
+        """, (user_id, user_id, user_id, max(1, min(limit, 100)))).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
+@app.get("/api/social/users/{user_id}")
+async def social_profile(user_id: int):
+    with connect() as db:
+        row = db.execute("""
+            SELECT u.id, u.display_name, u.handle, u.bio, u.created_at,
+                   (SELECT COUNT(*) FROM follows f WHERE f.following_id = u.id) AS follower_count,
+                   (SELECT COUNT(*) FROM follows f WHERE f.follower_id = u.id) AS following_count,
+                   (SELECT COUNT(*) FROM posts p WHERE p.user_id = u.id AND p.visibility = 'public') AS post_count
+            FROM users u WHERE u.id = ?
+        """, (user_id,)).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"user": dict(row)}
+
+
+@app.patch("/api/social/profile")
+async def update_social_profile(
+    request: ProfileUpdate,
+    authorization: str | None = Header(default=None),
+):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    updates = request.model_dump(exclude_unset=True)
+    if not updates:
+        return {"user": get_user(user["id"])}
+    if "handle" in updates:
+        handle = updates["handle"].strip().lower()
+        if not re.fullmatch(r"[a-z0-9_]{3,30}", handle):
+            raise HTTPException(status_code=422, detail="Handle must use 3-30 letters, numbers or underscores")
+        updates["handle"] = handle
+    if "display_name" in updates and updates["display_name"]:
+        updates["display_name"] = updates["display_name"].strip()
+    if "bio" in updates and updates["bio"] is not None:
+        updates["bio"] = updates["bio"].strip()
+    try:
+        with connect() as db:
+            for field, value in updates.items():
+                db.execute("UPDATE users SET " + field + " = ? WHERE id = ?", (value, user["id"]))
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(status_code=409, detail="That handle is already in use") from exc
+    return {"user": get_user(user["id"])}
+
+
+@app.post("/api/social/posts", status_code=201)
+async def create_social_post(
+    request: PostCreate,
+    authorization: str | None = Header(default=None),
+):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    content = request.content.strip()
+    if not content:
+        raise HTTPException(status_code=422, detail="Post cannot be blank")
+    with connect() as db:
+        cursor = db.execute(
+            "INSERT INTO posts (user_id, content, visibility) VALUES (?, ?, ?)",
+            (user["id"], content, request.visibility),
+        )
+        post_id = cursor.lastrowid
+    return {"id": post_id, "content": content, "visibility": request.visibility, "author_id": user["id"]}
+
+
+@app.post("/api/social/users/{user_id}/follow")
+async def follow_social_user(user_id: int, authorization: str | None = Header(default=None)):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    if user_id == user["id"]:
+        raise HTTPException(status_code=400, detail="You cannot follow yourself")
+    with connect() as db:
+        if not db.execute("SELECT 1 FROM users WHERE id = ?", (user_id,)).fetchone():
+            raise HTTPException(status_code=404, detail="User not found")
+        cursor = db.execute(
+            "INSERT OR IGNORE INTO follows (follower_id, following_id) VALUES (?, ?)",
+            (user["id"], user_id),
+        )
+    return {"following": True, "created": cursor.rowcount == 1}
+
+
+@app.delete("/api/social/users/{user_id}/follow")
+async def unfollow_social_user(user_id: int, authorization: str | None = Header(default=None)):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    with connect() as db:
+        db.execute("DELETE FROM follows WHERE follower_id = ? AND following_id = ?", (user["id"], user_id))
+    return {"following": False}
+
+
+@app.post("/api/social/posts/{post_id}/like")
+async def toggle_post_like(post_id: int, authorization: str | None = Header(default=None)):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    with connect() as db:
+        if not db.execute("SELECT 1 FROM posts WHERE id = ?", (post_id,)).fetchone():
+            raise HTTPException(status_code=404, detail="Post not found")
+        existing = db.execute(
+            "SELECT 1 FROM post_likes WHERE user_id = ? AND post_id = ?", (user["id"], post_id)
+        ).fetchone()
+        if existing:
+            db.execute("DELETE FROM post_likes WHERE user_id = ? AND post_id = ?", (user["id"], post_id))
+            liked = False
+        else:
+            db.execute("INSERT INTO post_likes (user_id, post_id) VALUES (?, ?)", (user["id"], post_id))
+            liked = True
+        count = db.execute("SELECT COUNT(*) FROM post_likes WHERE post_id = ?", (post_id,)).fetchone()[0]
+    return {"liked": liked, "like_count": count}
+
+
+@app.post("/api/social/posts/{post_id}/comments", status_code=201)
+async def add_post_comment(
+    post_id: int,
+    request: CommentCreate,
+    authorization: str | None = Header(default=None),
+):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    content = request.content.strip()
+    if not content:
+        raise HTTPException(status_code=422, detail="Comment cannot be blank")
+    with connect() as db:
+        if not db.execute("SELECT 1 FROM posts WHERE id = ?", (post_id,)).fetchone():
+            raise HTTPException(status_code=404, detail="Post not found")
+        cursor = db.execute(
+            "INSERT INTO post_comments (post_id, user_id, content) VALUES (?, ?, ?)",
+            (post_id, user["id"], content),
+        )
+        comment_id = cursor.lastrowid
+    return {"id": comment_id, "post_id": post_id, "user_id": user["id"], "content": content}
+
+
+@app.get("/api/social/posts/{post_id}/comments")
+async def list_post_comments(post_id: int, limit: int = 50):
+    with connect() as db:
+        if not db.execute("SELECT 1 FROM posts WHERE id = ?", (post_id,)).fetchone():
+            raise HTTPException(status_code=404, detail="Post not found")
+        rows = db.execute("""
+            SELECT c.id, c.content, c.created_at, u.id AS author_id, u.display_name, u.handle
+            FROM post_comments c JOIN users u ON u.id = c.user_id
+            WHERE c.post_id = ? ORDER BY c.id ASC LIMIT ?
+        """, (post_id, max(1, min(limit, 100)))).fetchall()
+    return {"items": [dict(row) for row in rows]}
 
 
 @app.post("/api/chat")
