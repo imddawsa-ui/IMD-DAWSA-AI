@@ -45,18 +45,17 @@ def register_verified(client, sent_tokens, email, name):
 
 
 def test_cors_allows_social_profile_patch(monkeypatch):
-    monkeypatch.setattr(main.settings, "cors_origins", ("https://imddawsa-ui.github.io",))
     with TestClient(app) as client:
         response = client.options(
             "/api/social/profile",
             headers={
-                "Origin": "https://imddawsa-ui.github.io",
+                "Origin": "http://localhost:8000",
                 "Access-Control-Request-Method": "PATCH",
                 "Access-Control-Request-Headers": "authorization,content-type",
             },
         )
         assert response.status_code == 200
-        assert response.headers["access-control-allow-origin"] == "https://imddawsa-ui.github.io"
+        assert response.headers["access-control-allow-origin"] == "http://localhost:8000"
         assert "PATCH" in response.headers["access-control-allow-methods"]
 
 
