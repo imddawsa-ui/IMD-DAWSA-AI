@@ -20,6 +20,13 @@ h1{font-size:clamp(20px,4vw,29px);margin:0}.sub{color:#a9bad2;margin:5px 0 0;fon
 main{padding:20px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
 input,textarea{font:inherit;color:#edf3ff;background:#0b1526;border:1px solid #354c68;border-radius:12px;padding:12px;min-width:0}
 #endpoint{flex:1;min-width:220px}#token{width:190px;max-width:100%}
+#account{padding:14px;margin:14px 0;background:#0c1729;border:1px solid #2a405e;border-radius:16px}
+.account-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.account-grid input{width:100%}.account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
+#account-status{font-size:12px;color:#a9bad2;margin:8px 0}
+#mfa-qr{width:150px;height:150px;background:white;padding:8px;border-radius:10px;margin-top:10px}
+#recovery-codes{white-space:pre-wrap;overflow-wrap:anywhere;color:#b7d5ff;font-size:12px}
+@media(max-width:620px){.account-grid{grid-template-columns:1fr}}
 button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:11px 16px;cursor:pointer;background:#b7d5ff;color:#10203a}
 button.secondary{background:#243750;color:#e8f1ff;border:1px solid #3a506c}button:disabled{opacity:.5;cursor:wait}
 .note{font-size:12px;color:#91a5c2;line-height:1.7;margin:8px 2px 16px}
@@ -40,17 +47,48 @@ footer{padding:0 20px 18px;color:#8195b3;font-size:11px}
 <button id="connect" type="button">اتصال</button>
 <button id="install" class="secondary" type="button" hidden>تثبيت التطبيق</button>
 </div>
+<section id="account">
+<strong>حساب IMD DAWSA AI</strong>
+<div class="account-grid" style="margin-top:10px">
+<input id="account-email" type="email" autocomplete="email" placeholder="البريد الإلكتروني">
+<input id="account-password" type="password" autocomplete="current-password" placeholder="كلمة المرور (10 أحرف على الأقل)">
+<input id="account-name" type="text" autocomplete="name" placeholder="الاسم الظاهر">
+<input id="mfa-code" type="text" inputmode="numeric" maxlength="6" placeholder="رمز المصادقة المكوّن من 6 أرقام">
+</div>
+<div class="account-actions">
+<button id="register" type="button">إنشاء حساب</button>
+<button id="login" type="button" class="secondary">تسجيل الدخول</button>
+<button id="mfa-setup" type="button" class="secondary">إعداد المصادقة الثنائية</button>
+<button id="mfa-enable" type="button" class="secondary">تفعيل المصادقة</button>
+<button id="logout" type="button" class="secondary">تسجيل الخروج</button>
+</div>
+<p id="account-status">سجّل الدخول أو أنشئ حساباً جديداً. يجب تأكيد البريد من الرسالة قبل تسجيل الدخول.</p>
+<img id="mfa-qr" alt="رمز QR للمصادقة الثنائية" hidden>
+<p id="recovery-codes"></p>
+</section>
 <p class="note">أدخل عنوان خادم IMD DAWSA AI الذي تديره. واجهة الويب لا تستضيف نموذج الذكاء الاصطناعي بنفسها. لا تستخدم خادماً عاماً غير موثوق، ولا تشارك رمز الوصول.</p>
 <section id="messages" aria-live="polite"><div class="msg assistant">مرحباً بك. اربط الواجهة بخادم IMD DAWSA AI الذي يعمل لديك، ثم ابدأ المحادثة.</div></section>
 <form id="chat-form"><textarea id="prompt" maxlength="12000" placeholder="اكتب رسالتك هنا…" required></textarea><button id="send" type="submit">إرسال</button></form>
-</main><footer>نسخة ويب تجريبية — لا تتضمن حتى الآن حسابات مستخدمين أو مزامنة سحابية متعددة المستخدمين. تُحفظ إعدادات الجلسة في هذا المتصفح فقط.</footer>
+</main><footer>نسخة ويب تجريبية — تدعم التسجيل والتحقق من البريد وتسجيل الدخول والمصادقة الثنائية عبر API. تُحفظ جلسة الحساب في sessionStorage لهذا المتصفح فقط.</footer>
 </div></div>
 <script>
 const $=s=>document.querySelector(s), endpoint=$('#endpoint'), token=$('#token'), statusEl=$('#status'), messages=$('#messages'), connectBtn=$('#connect'), sendBtn=$('#send');
+let sessionToken=sessionStorage.getItem('imd_session_token')||'';
+let mfaChallenge='';
 endpoint.value=sessionStorage.getItem('imd_api_url')||'';
 token.value=sessionStorage.getItem('imd_api_token')||'';
 function base(){return endpoint.value.trim().replace(/\/+$/,'')}
-function headers(){const h={'Content-Type':'application/json'};if(token.value.trim())h['X-API-Token']=token.value.trim();return h}
+function headers(){const h={'Content-Type':'application/json'};if(token.value.trim())h['X-API-Token']=token.value.trim();if(sessionToken)h.Authorization='Bearer '+sessionToken;return h}
+function accountStatus(message){$('#account-status').textContent=message}
+async function accountRequest(path,body){const r=await fetch(base()+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);return d}
+$('#register').addEventListener('click',async()=>{try{const d=await accountRequest('/api/auth/register',{email:$('#account-email').value.trim(),password:$('#account-password').value,display_name:$('#account-name').value.trim()});accountStatus(d.message||'تحقق من بريدك الإلكتروني لإكمال التسجيل.')}catch(e){accountStatus('تعذر إنشاء الحساب: '+e.message)}});
+$('#login').addEventListener('click',async()=>{try{const d=await accountRequest('/api/auth/login',{email:$('#account-email').value.trim(),password:$('#account-password').value});if(d.requires_2fa){mfaChallenge=d.challenge_token;accountStatus('أدخل رمز تطبيق المصادقة ثم اضغط تسجيل الدخول مرة أخرى.');return}sessionToken=d.access_token;sessionStorage.setItem('imd_session_token',sessionToken);accountStatus('تم تسجيل الدخول بنجاح.')}catch(e){accountStatus('تعذر تسجيل الدخول: '+e.message)}});
+$('#mfa-code').addEventListener('keydown',e=>{if(e.key==='Enter'&&mfaChallenge){e.preventDefault();$('#login').click()}});
+const loginButton=$('#login');
+loginButton.addEventListener('click',async()=>{if(!mfaChallenge)return;try{const d=await accountRequest('/api/auth/2fa/login',{challenge_token:mfaChallenge,code:$('#mfa-code').value.trim()});sessionToken=d.access_token;sessionStorage.setItem('imd_session_token',sessionToken);mfaChallenge='';accountStatus('تم تسجيل الدخول بعد المصادقة الثنائية.')}catch(e){accountStatus('رمز المصادقة غير صحيح: '+e.message)}});
+$('#mfa-setup').addEventListener('click',async()=>{try{const r=await fetch(base()+'/api/auth/2fa/setup',{method:'POST',headers:headers()});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);$('#mfa-qr').src='data:image/png;base64,'+d.qr_code_png_base64;$('#mfa-qr').hidden=false;accountStatus('امسح رمز QR بتطبيق المصادقة ثم أدخل الرمز واضغط تفعيل المصادقة.')}catch(e){accountStatus('تعذر إعداد المصادقة: '+e.message)}});
+$('#mfa-enable').addEventListener('click',async()=>{try{const r=await fetch(base()+'/api/auth/2fa/enable',{method:'POST',headers:headers(),body:JSON.stringify({code:$('#mfa-code').value.trim()})});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);$('#recovery-codes').textContent='احفظ رموز الاسترداد الآن؛ لن تظهر مرة أخرى:\n'+d.recovery_codes.join('\n');accountStatus('تم تفعيل المصادقة الثنائية.')}catch(e){accountStatus('تعذر تفعيل المصادقة: '+e.message)}});
+$('#logout').addEventListener('click',()=>{sessionToken='';mfaChallenge='';sessionStorage.removeItem('imd_session_token');accountStatus('تم تسجيل الخروج من هذا المتصفح.')});
 function add(text,kind='assistant'){const el=document.createElement('div');el.className='msg '+kind;el.textContent=text;messages.appendChild(el);messages.scrollTop=messages.scrollHeight}
 async function check(){if(!base())throw new Error('أدخل عنوان الخادم أولاً');const res=await fetch(base()+'/api/health');if(!res.ok)throw new Error('الخادم أعاد الحالة '+res.status);return res.json()}
 connectBtn.addEventListener('click',async()=>{connectBtn.disabled=true;statusEl.textContent='جارٍ الاتصال…';try{const data=await check();sessionStorage.setItem('imd_api_url',base());sessionStorage.setItem('imd_api_token',token.value);statusEl.textContent='متصل — '+(data.app||'IMD DAWSA AI');add('تم الاتصال بالخادم بنجاح.','assistant')}catch(e){statusEl.textContent='فشل الاتصال';add('تعذر الاتصال: '+e.message,'error')}finally{connectBtn.disabled=false}});
