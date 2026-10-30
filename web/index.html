@@ -25,6 +25,8 @@ input,textarea{font:inherit;color:#edf3ff;background:#0b1526;border:1px solid #3
 .account-grid input{width:100%}.account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
 #account-status{font-size:12px;color:#a9bad2;margin:8px 0}
 #mfa-qr{width:150px;height:150px;background:white;padding:8px;border-radius:10px;margin-top:10px}
+#marketplace{padding:14px;margin:14px 0;background:#0c1729;border:1px solid #2a405e;border-radius:16px}
+.market-card{padding:12px;margin:10px 0;border:1px solid #30435e;border-radius:14px;background:#101e32}
 #social{padding:14px;margin:14px 0;background:#0c1729;border:1px solid #2a405e;border-radius:16px}
 #social textarea,#social input{width:100%;margin:5px 0}
 .social-post{padding:12px;margin:10px 0;border:1px solid #30435e;border-radius:14px;background:#101e32}
@@ -108,6 +110,27 @@ footer{padding:0 20px 18px;color:#8195b3;font-size:11px}
 <button type="submit">إرسال</button>
 </form>
 </section>
+<section id="marketplace">
+<strong>السوق والخدمات</strong>
+<p class="note">تصفح عروض المستخدمين وانشر عرضاً أو خدمة. التواصل هنا استفسار فقط، لا توجد مدفوعات أو شحن مفعّل.</p>
+<div class="social-actions">
+<input id="market-search" maxlength="100" placeholder="ابحث عن منتج أو خدمة">
+<input id="market-category-filter" maxlength="50" placeholder="التصنيف (اختياري)">
+<button id="market-search-button" type="button" class="secondary">بحث</button>
+</div>
+<div id="market-feed"></div>
+<hr>
+<strong>إضافة عرض جديد</strong>
+<input id="listing-title" maxlength="120" placeholder="عنوان المنتج أو الخدمة">
+<textarea id="listing-description" maxlength="4000" rows="2" placeholder="وصف العرض"></textarea>
+<div class="account-grid">
+<input id="listing-category" maxlength="50" value="general" placeholder="التصنيف">
+<input id="listing-price" type="number" min="0.01" step="0.01" placeholder="السعر (اختياري)">
+<input id="listing-currency" maxlength="3" value="USD" placeholder="العملة (مثلاً USD)">
+</div>
+<button id="create-listing" type="button">نشر العرض</button>
+<div id="market-status" class="note" aria-live="polite"></div>
+</section>
 <p class="note">أدخل عنوان خادم IMD DAWSA AI الذي تديره. واجهة الويب لا تستضيف نموذج الذكاء الاصطناعي بنفسها. لا تستخدم خادماً عاماً غير موثوق، ولا تشارك رمز الوصول.</p>
 <section id="messages" aria-live="polite"><div class="msg assistant">مرحباً بك. اربط الواجهة بخادم IMD DAWSA AI الذي يعمل لديك، ثم ابدأ المحادثة.</div></section>
 <form id="chat-form"><textarea id="prompt" maxlength="12000" placeholder="اكتب رسالتك هنا…" required></textarea><button id="send" type="submit">إرسال</button></form>
@@ -159,6 +182,26 @@ $('#direct-message-form').addEventListener('submit',async e=>{e.preventDefault()
 $('#refresh-feed').addEventListener('click',async()=>{try{await loadSocial()}catch(e){socialStatus('تعذر تحميل المجتمع: '+e.message)}});
 $('#publish-post').addEventListener('click',async()=>{try{if(!sessionToken)throw new Error('سجّل الدخول أولاً');const content=$('#new-post').value.trim();if(!content)throw new Error('اكتب محتوى المنشور');await socialRequest('/api/social/posts',{method:'POST',body:JSON.stringify({content,visibility:$('#post-visibility').value})});$('#new-post').value='';await loadSocial();socialStatus('تم نشر منشورك.')}catch(e){socialStatus('تعذر النشر: '+e.message)}});
 $('#save-profile').addEventListener('click',async()=>{try{if(!sessionToken)throw new Error('سجّل الدخول أولاً');const d=await socialRequest('/api/social/profile',{method:'PATCH',body:JSON.stringify({handle:$('#social-handle').value.trim(),display_name:$('#social-display').value.trim(),bio:$('#social-bio').value.trim()})});socialStatus('تم حفظ الملف الشخصي باسم @'+d.user.handle)}catch(e){socialStatus('تعذر حفظ الملف الشخصي: '+e.message)}});
+async function loadMarketplace(){
+ const params=new URLSearchParams();if($('#market-search').value.trim())params.set('q',$('#market-search').value.trim());if($('#market-category-filter').value.trim())params.set('category',$('#market-category-filter').value.trim());
+ const r=await fetch(base()+'/api/marketplace/listings?'+params.toString());const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);
+ const root=$('#market-feed');root.replaceChildren();
+ if(!d.items.length){const empty=document.createElement('p');empty.className='note';empty.textContent='لا توجد عروض مطابقة.';root.appendChild(empty);return}
+ for(const listing of d.items){
+  const card=document.createElement('article');card.className='market-card';
+  const title=document.createElement('strong');title.textContent=listing.title;card.appendChild(title);
+  const details=document.createElement('p');details.textContent=listing.description+' · '+listing.category+' · '+(listing.price_amount==null?'السعر عند التواصل':listing.price_amount+' '+listing.currency);card.appendChild(details);
+  const seller=document.createElement('p');seller.className='social-meta';seller.textContent='البائع: '+listing.seller_name+' (@'+listing.seller_handle+')';card.appendChild(seller);
+  if(sessionToken){const form=document.createElement('form');form.className='social-actions';const input=document.createElement('input');input.maxLength=2000;input.required=true;input.placeholder='اسأل البائع عن العرض';const button=document.createElement('button');button.type='submit';button.textContent='إرسال استفسار';form.append(input,button);form.addEventListener('submit',async e=>{e.preventDefault();try{await socialRequest('/api/marketplace/listings/'+listing.id+'/enquiries',{method:'POST',body:JSON.stringify({message:input.value.trim()})});input.value='';$('#market-status').textContent='تم إرسال الاستفسار إلى البائع.'}catch(err){$('#market-status').textContent='تعذر الإرسال: '+err.message}});card.appendChild(form)}
+  root.appendChild(card);
+ }
+}
+$('#market-search-button').addEventListener('click',()=>loadMarketplace().catch(e=>$('#market-status').textContent=e.message));
+$('#create-listing').addEventListener('click',async()=>{
+ try{if(!sessionToken)throw new Error('سجّل الدخول أولاً');const price=$('#listing-price').value;const body={title:$('#listing-title').value.trim(),description:$('#listing-description').value.trim(),category:$('#listing-category').value.trim()||'general',currency:($('#listing-currency').value.trim()||'USD').toUpperCase()};if(price)body.price_amount=Number(price);
+ const r=await socialRequest('/api/marketplace/listings',{method:'POST',body:JSON.stringify(body)});$('#market-status').textContent='تم نشر العرض رقم '+r.id;$('#listing-title').value='';$('#listing-description').value='';$('#listing-price').value='';await loadMarketplace()
+ }catch(e){$('#market-status').textContent='تعذر نشر العرض: '+e.message}
+});
 function add(text,kind='assistant'){const el=document.createElement('div');el.className='msg '+kind;el.textContent=text;messages.appendChild(el);messages.scrollTop=messages.scrollHeight}
 async function check(){if(!base())throw new Error('أدخل عنوان الخادم أولاً');const res=await fetch(base()+'/api/health');if(!res.ok)throw new Error('الخادم أعاد الحالة '+res.status);return res.json()}
 connectBtn.addEventListener('click',async()=>{connectBtn.disabled=true;statusEl.textContent='جارٍ الاتصال…';try{const data=await check();sessionStorage.setItem('imd_api_url',base());sessionStorage.setItem('imd_api_token',token.value);statusEl.textContent='متصل — '+(data.app||'IMD DAWSA AI');add('تم الاتصال بالخادم بنجاح.','assistant')}catch(e){statusEl.textContent='فشل الاتصال';add('تعذر الاتصال: '+e.message,'error')}finally{connectBtn.disabled=false}});
