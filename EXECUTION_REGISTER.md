@@ -197,3 +197,14 @@ These are direct observations from the current default-branch source and reposit
 - Complete Android token storage/session lifecycle and server-side logout/revocation.
 - Run and record the latest Python, Android and Web CI results from the current main head.
 - Build missing API modules before presenting unimplemented product areas as available.
+
+## Active implementation update — 2026-10-30
+
+The following changes were committed after the earlier baseline snapshot. They are implementation evidence, not a claim that every end-to-end flow has been verified.
+
+- **Marketplace seller workspace — IMPLEMENTED, automated verification pending:** added authenticated `GET /api/marketplace/my-listings` and `GET /api/marketplace/seller-enquiries`, both scoped to the authenticated seller's own listings. Added a Web seller dashboard showing owned listings, enquiry counts and buyer messages. Added an API test for seller ownership isolation.
+- **Android password privacy — IMPLEMENTED, build verification pending:** password field now uses Compose password masking and password keyboard input.
+- **Android transport defaults — IMPLEMENTED, build verification pending:** release/main manifest disables cleartext HTTP; debug manifest explicitly overrides this for local emulator development only. Production builds must use HTTPS.
+- **Web script validation — IMPLEMENTED:** CI now parses the inline Web application script with Node's JavaScript parser in addition to checking the PWA manifest and service worker.
+- **CI evidence:** workflow run `41012516738` exposed an Android manifest-merge conflict between the main and debug manifests. The debug manifest was corrected using the manifest-merger replacement directive. Workflow run `41012640119` is the verification run for that correction; do not mark the Android build TESTED until it completes successfully. The Python and Web jobs from run `41012574153` completed successfully; its Android job failed on the manifest conflict before the correction.
+- **Known gap remains:** CI currently builds only a debug APK; it does not yet create a signed release, install on a physical phone, or verify backend connectivity from a real device.
