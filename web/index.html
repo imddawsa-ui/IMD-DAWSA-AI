@@ -79,6 +79,13 @@ footer{padding:0 20px 18px;color:#8195b3;font-size:11px}
 <p id="recovery-codes"></p>
 </section>
 <section id="social">
+<strong>الإشعارات</strong>
+<div class="social-actions">
+<button id="refresh-notifications" type="button" class="secondary">تحديث الإشعارات</button>
+<button id="read-all-notifications" type="button" class="secondary">تحديد الكل كمقروء</button>
+</div>
+<div id="notifications-feed" aria-live="polite"></div>
+<hr>
 <strong>المجتمع الاجتماعي</strong>
 <p class="note">انشر تحديثاتك، وتابع المنشورات العامة، وتفاعل مع المجتمع. يتطلب النشر والتفاعل تسجيل الدخول.</p>
 <div class="account-grid">
@@ -157,7 +164,7 @@ endpoint.value=sessionStorage.getItem('imd_api_url')||'';
 token.value=sessionStorage.getItem('imd_api_token')||'';
 function base(){return endpoint.value.trim().replace(/\/+$/,'')}
 function headers(){const h={'Content-Type':'application/json'};if(token.value.trim())h['X-API-Token']=token.value.trim();if(sessionToken)h.Authorization='Bearer '+sessionToken;return h}
-function accountStatus(message){$('#account-status').textContent=message;if(sessionToken&&message.includes('نجاح'))loadSocial().catch(e=>socialStatus('تعذر تحميل المجتمع: '+e.message))}
+function accountStatus(message){$('#account-status').textContent=message;if(sessionToken&&message.includes('نجاح')){loadSocial().catch(e=>socialStatus('تعذر تحميل المجتمع: '+e.message));loadNotifications().catch(e=>socialStatus('تعذر تحميل الإشعارات: '+e.message))}}
 async function accountRequest(path,body){const r=await fetch(base()+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);return d}
 $('#register').addEventListener('click',async()=>{try{const d=await accountRequest('/api/auth/register',{email:$('#account-email').value.trim(),password:$('#account-password').value,display_name:$('#account-name').value.trim()});accountStatus(d.message||'تحقق من بريدك الإلكتروني لإكمال التسجيل.')}catch(e){accountStatus('تعذر إنشاء الحساب: '+e.message)}});
 $('#resend-verification').addEventListener('click',async()=>{try{const r=await fetch(base()+'/api/auth/resend-verification?email='+encodeURIComponent($('#account-email').value.trim()),{method:'POST'});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);accountStatus(d.message||'إذا كان الحساب يحتاج إلى التحقق، فستصلك رسالة.')}catch(e){accountStatus('تعذر إرسال رسالة التحقق: '+e.message)}});
@@ -168,6 +175,25 @@ $('#mfa-setup').addEventListener('click',async()=>{try{const r=await fetch(base(
 $('#mfa-enable').addEventListener('click',async()=>{try{const r=await fetch(base()+'/api/auth/2fa/enable',{method:'POST',headers:headers(),body:JSON.stringify({code:$('#mfa-code').value.trim()})});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);$('#recovery-codes').textContent='احفظ رموز الاسترداد الآن؛ لن تظهر مرة أخرى:\n'+d.recovery_codes.join('\n');accountStatus('تم تفعيل المصادقة الثنائية.')}catch(e){accountStatus('تعذر تفعيل المصادقة: '+e.message)}});
 $('#logout').addEventListener('click',()=>{sessionToken='';mfaChallenge='';sessionStorage.removeItem('imd_session_token');accountStatus('تم تسجيل الخروج من هذا المتصفح.')});
 async function socialRequest(path,options={}){const r=await fetch(base()+path,{...options,headers:{...headers(),...(options.headers||{})}});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);return d}
+async function loadNotifications(){
+ if(!sessionToken)throw new Error('سجّل الدخول لعرض الإشعارات');
+ const data=await socialRequest('/api/notifications?limit=40');
+ const root=$('#notifications-feed');root.replaceChildren();
+ if(!data.items.length){const empty=document.createElement('p');empty.className='note';empty.textContent='لا توجد إشعارات جديدة.';root.appendChild(empty);return}
+ for(const notification of data.items){
+  const card=document.createElement('article');card.className='social-post';
+  const message=document.createElement('p');message.textContent=(notification.actor_name||'النظام')+' · '+notification.message;card.appendChild(message);
+  const meta=document.createElement('p');meta.className='social-meta';meta.textContent=notification.created_at;card.appendChild(meta);
+  if(!notification.read_at){
+   const read=document.createElement('button');read.type='button';read.className='secondary';read.textContent='تحديد كمقروء';
+   read.addEventListener('click',async()=>{try{await socialRequest('/api/notifications/'+notification.id+'/read',{method:'POST'});await loadNotifications()}catch(e){socialStatus('تعذر تحديث الإشعار: '+e.message)}});
+   card.appendChild(read);
+  }
+  root.appendChild(card);
+ }
+}
+$('#refresh-notifications').addEventListener('click',()=>loadNotifications().catch(e=>socialStatus('تعذر تحميل الإشعارات: '+e.message)));
+$('#read-all-notifications').addEventListener('click',async()=>{try{await socialRequest('/api/notifications/read-all',{method:'POST'});await loadNotifications()}catch(e){socialStatus('تعذر تحديث الإشعارات: '+e.message)}});
 function socialStatus(message){$('#social-status').textContent=message}
 function renderFeed(items){
  const feed=$('#social-feed');feed.replaceChildren();
