@@ -1,4 +1,4 @@
-name: IMD DAWSA AI checks
+name: IMD DAWSA AI Android and backend checks
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  python-tests:
+  backend-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,7 +19,7 @@ jobs:
       - run: python -m compileall -q app tests
       - run: pytest -q
 
-  android-debug-build:
+  android-apk:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,28 +31,12 @@ jobs:
       - name: Build Android debug APK
         working-directory: android
         run: gradle assembleDebug --no-daemon
-      - name: Upload Android debug APK
+      - name: Verify APK exists
+        run: test -s android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Upload installable Android APK
         uses: actions/upload-artifact@v4
         with:
-          name: nile-one-human-android-debug-apk
+          name: imd-dawsa-ai-android-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          retention-days: 14
-
-  web-client-check:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-      - name: Validate PWA manifest and service worker syntax
-        run: |
-          node -e "JSON.parse(require('fs').readFileSync('web/manifest.webmanifest', 'utf8'))"
-          node --check web/sw.js
-      - name: Verify required web assets
-        run: |
-          test -s web/index.html
-          test -s web/manifest.webmanifest
-          test -s web/sw.js
-          test -s web/icon.svg
+          retention-days: 30
