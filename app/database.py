@@ -22,6 +22,9 @@ def initialize():
                 display_name TEXT NOT NULL,
                 handle TEXT UNIQUE,
                 bio TEXT NOT NULL DEFAULT '',
+                email_verified INTEGER NOT NULL DEFAULT 0,
+                totp_secret_enc TEXT,
+                totp_enabled INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -41,6 +44,30 @@ def initialize():
             db.execute("ALTER TABLE users ADD COLUMN handle TEXT")
         if "bio" not in user_columns:
             db.execute("ALTER TABLE users ADD COLUMN bio TEXT NOT NULL DEFAULT ''")
+        if "email_verified" not in user_columns:
+            db.execute("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0")
+        if "totp_secret_enc" not in user_columns:
+            db.execute("ALTER TABLE users ADD COLUMN totp_secret_enc TEXT")
+        if "totp_enabled" not in user_columns:
+            db.execute("ALTER TABLE users ADD COLUMN totp_enabled INTEGER NOT NULL DEFAULT 0")
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS email_verification_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                token_hash TEXT NOT NULL UNIQUE,
+                expires_at INTEGER NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS two_factor_recovery_codes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                code_hash TEXT NOT NULL,
+                used_at TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         db.execute("UPDATE users SET handle = 'user' || id WHERE handle IS NULL OR handle = ''")
         # Repair duplicate legacy handles before enforcing uniqueness on upgraded databases.
         db.execute("""
@@ -112,7 +139,7 @@ def get_user_by_email(email: str):
 def get_user(user_id: int):
     with connect() as db:
         row = db.execute(
-            "SELECT id, email, display_name, handle, bio, created_at FROM users WHERE id = ?", (user_id,)
+            "SELECT id, email, display_name, handle, bio, email_verified, totp_enabled, created_at FROM users WHERE id = ?", (user_id,)
         ).fetchone()
     return dict(row) if row else None
 
