@@ -38,6 +38,9 @@ private data class MarketItem(val id: Int, val title: String, val description: S
 @Composable
 private fun NileOneApp() {
     var endpoint by remember { mutableStateOf("") }
+    val languageOptions = listOf("ar" to "العربية", "en" to "English", "fr" to "Français", "es" to "Español", "pt" to "Português", "sw" to "Kiswahili", "am" to "አማርኛ", "so" to "Soomaali", "ha" to "Hausa", "zh" to "中文", "hi" to "हिन्दी", "ur" to "اردو", "bn" to "বাংলা", "ru" to "Русский", "de" to "Deutsch", "it" to "Italiano", "tr" to "Türkçe", "id" to "Bahasa Indonesia", "ja" to "日本語", "ko" to "한국어", "fa" to "فارسی", "ps" to "پښتو", "nl" to "Nederlands", "pl" to "Polski", "uk" to "Українська", "zu" to "isiZulu", "rw" to "Kinyarwanda", "lg" to "Luganda")
+    var languageCode by remember { mutableStateOf(languageOptions.firstOrNull { it.first == java.util.Locale.getDefault().language }?.first ?: "en") }
+    var languageMenuOpen by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var displayName by remember { mutableStateOf("") }
@@ -101,6 +104,15 @@ private fun NileOneApp() {
             }
         ) { padding ->
             Column(Modifier.fillMaxSize().padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Text("🌍 Language")
+                    Box {
+                        OutlinedButton(onClick = { languageMenuOpen = true }) { Text(languageOptions.firstOrNull { it.first == languageCode }?.second ?: languageCode) }
+                        DropdownMenu(expanded = languageMenuOpen, onDismissRequest = { languageMenuOpen = false }) {
+                            languageOptions.forEach { option -> DropdownMenuItem(text = { Text(option.second) }, onClick = { languageCode = option.first; languageMenuOpen = false; generalStatus = "لغة الترجمة: " + option.second + ". يتطلب ذلك إعداد محرك ترجمة على الخادم." }) }
+                        }
+                    }
+                }
                 when(activeTab) {
                     "الرئيسية" -> {
                         Text("منصة واحدة لخدماتك الرقمية والذكاء الاصطناعي", style = MaterialTheme.typography.titleLarge)
@@ -128,7 +140,15 @@ private fun NileOneApp() {
                         Button(enabled = !busy && prompt.isNotBlank(), modifier = Modifier.fillMaxWidth(), onClick = {
                             val msg = prompt.trim(); prompt = ""; chatLines = chatLines + ("أنت" to msg); busy = true
                             scope.launch {
-                                try { requireEndpoint(); val res = withContext(Dispatchers.IO) { postJson(base(), "/api/chat", JSONObject().put("message",msg), token) }; chatLines = chatLines + ("NILE ONE AI · ${res.optString("model","AI")}" to res.optString("reply","لم يرجع الخادم إجابة")); generalStatus = "اكتملت الإجابة" }
+                                try { requireEndpoint(); val res = withContext(Dispatchers.IO) { postJson(base(), "/api/chat", JSONObject().put("message",msg), token) }; var answer = res.optString("reply","لم يرجع الخادم إجابة")
+                                    try {
+                                        val translated = withContext(Dispatchers.IO) { postJson(base(), "/api/i18n/translate", JSONObject().put("text", answer).put("source", "auto").put("target", languageCode), null) }
+                                        answer = translated.optString("translated_text", answer)
+                                        generalStatus = "اكتملت الإجابة مع الترجمة."
+                                    } catch (_: Exception) {
+                                        generalStatus = "الرد الأصلي معروض؛ الترجمة غير متاحة حتى يتم إعداد محرك ترجمة مجاني على الخادم."
+                                    }
+                                    chatLines = chatLines + ("NILE ONE AI · " + res.optString("model","AI") to answer) }
                                 catch(e:Exception) { chatLines = chatLines + ("النظام" to "تعذر تنفيذ الطلب: ${e.message}") }
                                 finally { busy = false }
                             }
