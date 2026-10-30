@@ -28,3 +28,9 @@ After the model is downloaded, local chat can run offline.
 GET /api/health, GET /api/readiness, POST /api/chat with JSON {"message":"Hello"}.
 
 See SECURITY.md and ROADMAP.md before deploying or adding modules.
+
+
+## Web client
+A responsive Arabic-first installable web client is available in `web/`. It is published through the GitHub Actions workflow in `.github/workflows/pages.yml` after GitHub Pages is enabled with **Settings → Pages → Build and deployment → GitHub Actions**.
+
+The static web client needs a separately deployed HTTPS FastAPI backend and a correctly configured `CORS_ORIGINS`. GitHub Pages does not host the local Ollama model, API or database. Read [WEB_DEPLOYMENT.md](WEB_DEPLOYMENT.md) before connecting a backend.
