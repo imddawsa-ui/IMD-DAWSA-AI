@@ -257,3 +257,90 @@ These modules extend the initial scope so the platform can grow into a broad sup
 - Creator/business monetization subject to payment-provider availability and local law.
 - Anti-fraud, identity/trust signals, appeals and dispute resolution.
 - Tax, consumer protection, privacy and financial compliance review for each launch country.
+
+
+## 14. Core intelligence and productivity platform modules
+
+### 14.1 Personal AI Agent
+- User-specific assistant with goals, preferences and permission-scoped tools.
+- Multi-step planning, task decomposition, resumable runs, progress and cancellation.
+- Connectors to files, calendar, email, project boards and approved services when explicitly connected.
+- Approval gates before sending messages, publishing content, spending money, changing account settings, deleting data or executing other consequential actions.
+- Tool allowlists, per-agent budgets, audit history, sandboxing and prompt-injection defenses.
+- Distinguish proposed, simulated, pending-approval, completed and failed actions.
+
+### 14.2 Knowledge Hub
+- Personal and team libraries for documents, PDFs, spreadsheets, presentations, notes, links and media.
+- Upload, import, metadata extraction, OCR where supported, chunking, indexing and semantic retrieval.
+- Collections, tags, folders, version history, citations back to source passages and permission-aware sharing.
+- Ask questions across selected files; show source references and warn when sources are incomplete or outdated.
+- Retention, export, deletion and local/private storage options.
+
+### 14.3 Universal Search
+- One search entry across users, profiles, posts, comments, groups, messages where authorized, products, services, jobs, learning, files, help and connected apps.
+- Filters, sorting, autocomplete, typo tolerance, multilingual and Arabic-aware search.
+- Respect visibility, membership and per-object authorization at query time.
+- Search indexing/de-indexing pipeline, freshness indicators, abuse controls and privacy-safe query analytics.
+- Never expose private messages or files to users lacking permission.
+
+### 14.4 Smart Recommendations
+- Personalized recommendations for posts, people, groups, products, services, courses and jobs.
+- User controls for topics, interests, hide/not-interested, reset and opt-out.
+- Explain key recommendation reasons where practical.
+- Safety, diversity, freshness, spam resistance and fairness evaluation.
+- Do not infer or target sensitive traits; do not sell or expose private profile signals.
+- Separate sponsored placements clearly from organic ranking.
+
+### 14.5 Digital Wallet and payments
+- Wallet interface for balances and transaction history only through an eligible, approved financial/payment provider.
+- Provider-backed top-ups, withdrawals, transfers, merchant payments, refunds and receipts where legally and technically supported.
+- Double-entry ledger/reconciliation, idempotency, transaction state machine, dispute and chargeback handling.
+- Strong authentication, fraud monitoring, limits, risk checks and immutable audit trail.
+- Never store raw card credentials or represent an internal app balance as safeguarded money without a compliant provider structure.
+- Country-specific availability, KYC/AML, consumer protection, licensing and data-protection review.
+- Wallet and money movement remain BLOCKED until provider, jurisdiction, legal/compliance and security gates pass.
+
+### 14.6 Customer CRM
+- Contacts, companies, leads, opportunities, sales pipelines and deal stages.
+- Tasks, reminders, interaction history, notes, consent and communication preferences.
+- Quotations, invoices and sales reports when connected to compliant billing providers.
+- Team ownership, role permissions, import/export, deduplication and audit history.
+- AI summaries and suggested next actions with human review.
+
+### 14.7 Project Management
+- Workspaces, projects, boards, lists, tasks, subtasks, milestones and dependencies.
+- Assignees, roles, due dates, priorities, labels, comments, attachments and activity history.
+- Calendar, timeline and workload views; recurring tasks and notifications.
+- Templates, goals, progress reports and cross-project search.
+- AI project planning and task assistance; approval before modifying critical plans or assigning external commitments.
+
+### 14.8 Cloud Workspace
+- User/team file storage, folders, previews, sharing and access controls.
+- Version history, restore, link expiry, download restrictions where supported and audit logs.
+- Cross-device synchronization, selective sync, offline cache and conflict resolution.
+- Encryption in transit and at rest, quota management, malware scanning and backup/restore.
+- Object storage provider abstraction and data residency choices where available.
+
+### 14.9 API & Plugin Store
+- Developer portal, API docs, SDKs, webhooks, sandbox and versioned APIs.
+- Plugin manifests, publisher identity, requested scopes, permission explanations and user consent.
+- Review, signing, versioning, release channels, revocation and vulnerability reporting.
+- Isolated execution, resource limits, secret isolation, audit and abuse monitoring.
+- Ratings/reviews and billing only with moderation, fraud controls and clear terms.
+- Never run arbitrary third-party plugin code inside the trusted core process.
+
+### 14.10 AI Evaluation Center
+- Curated evaluation suites for correctness, instruction following, multilingual and Arabic quality, coding, retrieval, tool use and safety.
+- Compare local and cloud models on the same tasks with reproducible prompts and datasets.
+- Measure latency, throughput, memory/CPU use, token usage and cost where available.
+- Human rating, blind pairwise comparison, regression tracking and failure analysis.
+- Prompt/model/version registry, release gates and rollback criteria.
+- Protect private data in evaluation datasets; require consent and remove secrets/identifiers.
+- Publish benchmark methodology and uncertainty; do not claim a model is universally best from a narrow test.
+
+### 14.11 Shared integration and dependency rules
+- All ten modules use centralized identity, permissions, audit, notifications, search and localization.
+- Agent actions against Knowledge Hub, CRM, projects, wallet or cloud files inherit the caller's exact permissions.
+- Universal Search and recommendations must honor the same access-control rules as the underlying services.
+- Wallet transactions require separate financial authorization and cannot be approved merely by general agent permission.
+- Plugins receive minimum scopes and can be disconnected/revoked by the user.
