@@ -87,6 +87,18 @@ async def security_middleware(request, call_next):
     return response
 
 
+def create_notification(user_id: int, actor_id: int | None, kind: str,
+                        object_type: str | None, object_id: int | None, message: str):
+    if actor_id is not None and int(actor_id) == int(user_id):
+        return
+    with connect() as db:
+        db.execute(
+            "INSERT INTO notifications (user_id, actor_id, kind, object_type, object_id, message) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (user_id, actor_id, kind, object_type, object_id, message),
+        )
+
+
 def can_view_post(db, post, viewer_id):
     if not post:
         return False
@@ -391,6 +403,8 @@ async def follow_social_user(user_id: int, authorization: str | None = Header(de
             "INSERT OR IGNORE INTO follows (follower_id, following_id) VALUES (?, ?)",
             (user["id"], user_id),
         )
+    if cursor.rowcount == 1:
+        create_notification(user_id, user["id"], "follow", "user", user["id"], "بدأ بمتابعتك")
     return {"following": True, "created": cursor.rowcount == 1}
 
 
@@ -423,6 +437,9 @@ async def toggle_post_like(post_id: int, authorization: str | None = Header(defa
             db.execute("INSERT INTO post_likes (user_id, post_id) VALUES (?, ?)", (user["id"], post_id))
             liked = True
         count = db.execute("SELECT COUNT(*) FROM post_likes WHERE post_id = ?", (post_id,)).fetchone()[0]
+        owner_id = int(post["user_id"])
+    if liked:
+        create_notification(owner_id, user["id"], "like", "post", post_id, "أعجب بمنشورك")
     return {"liked": liked, "like_count": count}
 
 
@@ -449,6 +466,8 @@ async def add_post_comment(
             (post_id, user["id"], content),
         )
         comment_id = cursor.lastrowid
+        owner_id = int(post["user_id"])
+    create_notification(owner_id, user["id"], "comment", "post", post_id, "علّق على منشورك")
     return {"id": comment_id, "post_id": post_id, "user_id": user["id"], "content": content}
 
 
@@ -467,6 +486,61 @@ async def list_post_comments(
             WHERE c.post_id = ? ORDER BY c.id ASC LIMIT ?
         """, (post_id, max(1, min(limit, 100)))).fetchall()
     return {"items": [dict(row) for row in rows]}
+
+
+@app.get("/api/notifications")
+async def list_notifications(
+    limit: int = 50,
+    authorization: str | None = Header(default=None),
+):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    with connect() as db:
+        rows = db.execute("""
+            SELECT n.id, n.kind, n.object_type, n.object_id, n.message, n.read_at, n.created_at,
+                   n.actor_id, u.display_name AS actor_name, u.handle AS actor_handle
+            FROM notifications n
+            LEFT JOIN users u ON u.id = n.actor_id
+            WHERE n.user_id = ?
+            ORDER BY n.id DESC LIMIT ?
+        """, (user["id"], max(1, min(limit, 100)))).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
+@app.post("/api/notifications/{notification_id}/read")
+async def mark_notification_read(
+    notification_id: int,
+    authorization: str | None = Header(default=None),
+):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    with connect() as db:
+        cursor = db.execute(
+            "UPDATE notifications SET read_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ? AND read_at IS NULL",
+            (notification_id, user["id"]),
+        )
+        exists = db.execute(
+            "SELECT 1 FROM notifications WHERE id = ? AND user_id = ?",
+            (notification_id, user["id"]),
+        ).fetchone()
+    if not exists:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    return {"read": True, "updated": cursor.rowcount == 1}
+
+
+@app.post("/api/notifications/read-all")
+async def mark_all_notifications_read(authorization: str | None = Header(default=None)):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    with connect() as db:
+        cursor = db.execute(
+            "UPDATE notifications SET read_at = CURRENT_TIMESTAMP WHERE user_id = ? AND read_at IS NULL",
+            (user["id"],),
+        )
+    return {"read": True, "updated": cursor.rowcount}
 
 
 @app.get("/api/marketplace/listings")
@@ -544,6 +618,8 @@ async def create_marketplace_enquiry(
             "INSERT INTO marketplace_enquiries (listing_id, buyer_id, message) VALUES (?, ?, ?)",
             (listing_id, user["id"], request.message.strip()),
         )
+        seller_id = int(listing["seller_id"])
+    create_notification(seller_id, user["id"], "marketplace_enquiry", "listing", listing_id, "أرسل مشتري استفساراً عن عرضك")
     return {"id": cursor.lastrowid, "listing_id": listing_id, "created": True}
 
 
@@ -630,6 +706,7 @@ async def send_direct_message(
             (user["id"], other_user_id, content),
         )
         message_id = cursor.lastrowid
+    create_notification(other_user_id, user["id"], "message", "conversation", user["id"], "أرسل إليك رسالة جديدة")
     return {"id": message_id, "sender_id": user["id"], "receiver_id": other_user_id, "content": content}
 
 
