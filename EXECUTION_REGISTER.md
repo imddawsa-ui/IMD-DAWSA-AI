@@ -392,3 +392,22 @@ This section is the current evidence-backed status and supersedes older status r
 6. Release APK signed using owner-controlled release key; never commit private signing material.
 
 No public production release or 100% completion claim is made until these gates pass.
+
+## Connected-service capability audit — 2026-10-30
+
+This audit records live connector checks performed after the latest source commit.
+
+- GitHub repository access is active. Latest workflow run `41107246165` for commit `2f11063c76968d140185b366fd47b6126531e1dc` completed successfully. Its three jobs — `backend-tests`, `web-client`, and `android-apk` — all concluded `success`.
+- The run produced a non-expired `imd-dawsa-ai-android-debug-apk` artifact (about 9.1 MB). This is a CI debug APK, not a signed production release and has not been installed on a physical phone.
+- Cloudflare account connection is active and an existing Pages project `imd-dawsa-ai` is present at `imd-dawsa-ai.pages.dev`. The Pages project currently reports `latest_deployment: null` and `canonical_deployment: null`; therefore there is no verified live deployment yet. The repository CI workflow currently validates the Web client but does not publish it.
+- Cloudflare R2 bucket access returned HTTP 403 with code 10042 because R2 is not enabled for this account. Do not attempt to use R2 until it is enabled in the Cloudflare dashboard and the account's intended free-tier/usage terms are checked.
+- Supabase connection is active and one organization is visible, but it has zero projects. No database project has been created. Creating a new Supabase project is not assumed to be zero-cost; the owner-approved USD 0 policy remains in force.
+- Replit connection is active but no editable apps were found. Do not claim an existing Replit deployment.
+- No paid resources were created and no billing settings were changed.
+
+### Immediate engineering priorities
+1. Keep the latest green CI as the source baseline.
+2. Add a controlled Cloudflare Pages deployment workflow only after confirming a least-privilege Cloudflare API token can be stored as a GitHub Actions secret; never put tokens in source.
+3. Select a backend persistence/deployment path that is demonstrably zero-cost before provisioning anything. Local FastAPI + SQLite + Ollama remains the working offline path; public backend hosting is not yet verified.
+4. Continue the translation integration with an explicitly configured, tested engine and accurate language-pair catalog; no universal translation claim.
+5. Build missing production account recovery, token/session lifecycle, abuse controls, end-to-end tests and device smoke tests.
