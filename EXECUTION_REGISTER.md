@@ -487,3 +487,9 @@ No row above is marked TESTED or VERIFIED until code, tests and the correspondin
 - Added `scripts/configure_local.py` to generate missing/invalid authentication and backup encryption keys while preserving existing valid keys; the Windows installer now calls it.
 - Added tests for secure key generation and preservation. CI has not yet confirmed these latest commits.
 - Keep `BACKUP_ENCRYPTION_KEY` separate from copied backup files. If the key is lost, encrypted backups cannot be recovered. Automated scheduling, retention, off-device copies and a real restore drill remain outstanding.
+
+
+## Android visual system update — 2026-10-30
+
+- Added a persistent Android theme selector with Aurora Dark, Studio Light, Nebula Purple and Emerald Focus palettes, stored in app preferences.
+- The change is committed but requires Android CI and visual verification on a physical device before being marked VERIFIED.
