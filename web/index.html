@@ -25,6 +25,14 @@ input,textarea{font:inherit;color:#edf3ff;background:#0b1526;border:1px solid #3
 .account-grid input{width:100%}.account-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px}
 #account-status{font-size:12px;color:#a9bad2;margin:8px 0}
 #mfa-qr{width:150px;height:150px;background:white;padding:8px;border-radius:10px;margin-top:10px}
+#social{padding:14px;margin:14px 0;background:#0c1729;border:1px solid #2a405e;border-radius:16px}
+#social textarea,#social input{width:100%;margin:5px 0}
+.social-post{padding:12px;margin:10px 0;border:1px solid #30435e;border-radius:14px;background:#101e32}
+.social-meta{font-size:12px;color:#a9bad2;margin-bottom:7px}
+.social-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.social-actions button{padding:7px 11px}
+.social-comment{font-size:13px;border-top:1px solid #30435e;padding-top:7px;margin-top:7px}
+
 #recovery-codes{white-space:pre-wrap;overflow-wrap:anywhere;color:#b7d5ff;font-size:12px}
 @media(max-width:620px){.account-grid{grid-template-columns:1fr}}
 button{font:inherit;font-weight:700;border:0;border-radius:12px;padding:11px 16px;cursor:pointer;background:#b7d5ff;color:#10203a}
@@ -68,6 +76,26 @@ footer{padding:0 20px 18px;color:#8195b3;font-size:11px}
 <img id="mfa-qr" alt="رمز QR للمصادقة الثنائية" hidden>
 <p id="recovery-codes"></p>
 </section>
+<section id="social">
+<strong>المجتمع الاجتماعي</strong>
+<p class="note">انشر تحديثاتك، وتابع المنشورات العامة، وتفاعل مع المجتمع. يتطلب النشر والتفاعل تسجيل الدخول.</p>
+<div class="account-grid">
+<input id="social-handle" maxlength="30" placeholder="اسم المستخدم (3–30 حرفاً)">
+<input id="social-display" maxlength="80" placeholder="الاسم الظاهر">
+</div>
+<textarea id="social-bio" maxlength="300" rows="2" placeholder="نبذة عنك"></textarea>
+<div class="social-actions">
+<button id="save-profile" type="button" class="secondary">حفظ الملف الشخصي</button>
+<button id="refresh-feed" type="button" class="secondary">تحديث المنشورات</button>
+</div>
+<textarea id="new-post" maxlength="4000" rows="3" placeholder="ماذا تريد أن تشارك؟"></textarea>
+<div class="social-actions">
+<select id="post-visibility" aria-label="خصوصية المنشور"><option value="public">عام</option><option value="followers">المتابعون</option><option value="private">خاص</option></select>
+<button id="publish-post" type="button">نشر</button>
+</div>
+<div id="social-status" class="note" aria-live="polite">سجّل الدخول لتحميل مجتمعك.</div>
+<div id="social-feed" aria-live="polite"></div>
+</section>
 <p class="note">أدخل عنوان خادم IMD DAWSA AI الذي تديره. واجهة الويب لا تستضيف نموذج الذكاء الاصطناعي بنفسها. لا تستخدم خادماً عاماً غير موثوق، ولا تشارك رمز الوصول.</p>
 <section id="messages" aria-live="polite"><div class="msg assistant">مرحباً بك. اربط الواجهة بخادم IMD DAWSA AI الذي يعمل لديك، ثم ابدأ المحادثة.</div></section>
 <form id="chat-form"><textarea id="prompt" maxlength="12000" placeholder="اكتب رسالتك هنا…" required></textarea><button id="send" type="submit">إرسال</button></form>
@@ -81,7 +109,7 @@ endpoint.value=sessionStorage.getItem('imd_api_url')||'';
 token.value=sessionStorage.getItem('imd_api_token')||'';
 function base(){return endpoint.value.trim().replace(/\/+$/,'')}
 function headers(){const h={'Content-Type':'application/json'};if(token.value.trim())h['X-API-Token']=token.value.trim();if(sessionToken)h.Authorization='Bearer '+sessionToken;return h}
-function accountStatus(message){$('#account-status').textContent=message}
+function accountStatus(message){$('#account-status').textContent=message;if(sessionToken&&message.includes('نجاح'))loadSocial().catch(e=>socialStatus('تعذر تحميل المجتمع: '+e.message))}
 async function accountRequest(path,body){const r=await fetch(base()+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);return d}
 $('#register').addEventListener('click',async()=>{try{const d=await accountRequest('/api/auth/register',{email:$('#account-email').value.trim(),password:$('#account-password').value,display_name:$('#account-name').value.trim()});accountStatus(d.message||'تحقق من بريدك الإلكتروني لإكمال التسجيل.')}catch(e){accountStatus('تعذر إنشاء الحساب: '+e.message)}});
 $('#resend-verification').addEventListener('click',async()=>{try{const r=await fetch(base()+'/api/auth/resend-verification?email='+encodeURIComponent($('#account-email').value.trim()),{method:'POST'});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);accountStatus(d.message||'إذا كان الحساب يحتاج إلى التحقق، فستصلك رسالة.')}catch(e){accountStatus('تعذر إرسال رسالة التحقق: '+e.message)}});
@@ -91,6 +119,30 @@ $('#mfa-code').addEventListener('keydown',e=>{if(e.key==='Enter'&&mfaChallenge){
 $('#mfa-setup').addEventListener('click',async()=>{try{const r=await fetch(base()+'/api/auth/2fa/setup',{method:'POST',headers:headers()});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);$('#mfa-qr').src='data:image/png;base64,'+d.qr_code_png_base64;$('#mfa-qr').hidden=false;accountStatus('امسح رمز QR بتطبيق المصادقة ثم أدخل الرمز واضغط تفعيل المصادقة.')}catch(e){accountStatus('تعذر إعداد المصادقة: '+e.message)}});
 $('#mfa-enable').addEventListener('click',async()=>{try{const r=await fetch(base()+'/api/auth/2fa/enable',{method:'POST',headers:headers(),body:JSON.stringify({code:$('#mfa-code').value.trim()})});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);$('#recovery-codes').textContent='احفظ رموز الاسترداد الآن؛ لن تظهر مرة أخرى:\n'+d.recovery_codes.join('\n');accountStatus('تم تفعيل المصادقة الثنائية.')}catch(e){accountStatus('تعذر تفعيل المصادقة: '+e.message)}});
 $('#logout').addEventListener('click',()=>{sessionToken='';mfaChallenge='';sessionStorage.removeItem('imd_session_token');accountStatus('تم تسجيل الخروج من هذا المتصفح.')});
+async function socialRequest(path,options={}){const r=await fetch(base()+path,{...options,headers:{...headers(),...(options.headers||{})}});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);return d}
+function socialStatus(message){$('#social-status').textContent=message}
+function renderFeed(items){
+ const feed=$('#social-feed');feed.replaceChildren();
+ if(!items.length){const empty=document.createElement('p');empty.className='note';empty.textContent='لا توجد منشورات حتى الآن.';feed.appendChild(empty);return}
+ for(const post of items){
+  const card=document.createElement('article');card.className='social-post';
+  const meta=document.createElement('div');meta.className='social-meta';meta.textContent=(post.display_name||'مستخدم')+' · @'+(post.handle||'user')+' · '+post.created_at;card.appendChild(meta);
+  const body=document.createElement('p');body.style.whiteSpace='pre-wrap';body.textContent=post.content;card.appendChild(body);
+  const actions=document.createElement('div');actions.className='social-actions';
+  const like=document.createElement('button');like.type='button';like.className='secondary';like.textContent=(post.liked_by_me?'إلغاء الإعجاب':'إعجاب')+' ('+post.like_count+')';
+  like.addEventListener('click',async()=>{try{const d=await socialRequest('/api/social/posts/'+post.id+'/like',{method:'POST'});post.liked_by_me=d.liked;post.like_count=d.like_count;like.textContent=(d.liked?'إلغاء الإعجاب':'إعجاب')+' ('+d.like_count+')'}catch(e){socialStatus('تعذر التفاعل: '+e.message)}});
+  const comment=document.createElement('button');comment.type='button';comment.className='secondary';comment.textContent='عرض التعليقات ('+post.comment_count+')';
+  const commentArea=document.createElement('div');commentArea.hidden=true;commentArea.className='social-comment';
+  comment.addEventListener('click',async()=>{commentArea.hidden=!commentArea.hidden;if(commentArea.hidden)return;try{const d=await socialRequest('/api/social/posts/'+post.id+'/comments');commentArea.replaceChildren();for(const item of d.items){const p=document.createElement('p');p.textContent=item.display_name+': '+item.content;commentArea.appendChild(p)}}catch(e){socialStatus('تعذر تحميل التعليقات: '+e.message)}});
+  actions.append(like,comment);card.append(actions,commentArea);
+  if(sessionToken){const form=document.createElement('form');form.className='social-actions';const input=document.createElement('input');input.maxLength=1000;input.placeholder='اكتب تعليقاً';input.required=true;const send=document.createElement('button');send.type='submit';send.textContent='تعليق';form.append(input,send);form.addEventListener('submit',async e=>{e.preventDefault();try{await socialRequest('/api/social/posts/'+post.id+'/comments',{method:'POST',body:JSON.stringify({content:input.value.trim()})});input.value='';post.comment_count++;comment.textContent='عرض التعليقات ('+post.comment_count+')';comment.click()}catch(err){socialStatus('تعذر إضافة التعليق: '+err.message)}});card.appendChild(form)}
+  feed.appendChild(card);
+ }
+}
+async function loadSocial(){if(!base())throw new Error('أدخل عنوان الخادم أولاً');const d=await socialRequest('/api/social/feed?limit=40');renderFeed(d.items||[]);socialStatus('تم تحميل '+(d.items||[]).length+' منشوراً.')}
+$('#refresh-feed').addEventListener('click',async()=>{try{await loadSocial()}catch(e){socialStatus('تعذر تحميل المجتمع: '+e.message)}});
+$('#publish-post').addEventListener('click',async()=>{try{if(!sessionToken)throw new Error('سجّل الدخول أولاً');const content=$('#new-post').value.trim();if(!content)throw new Error('اكتب محتوى المنشور');await socialRequest('/api/social/posts',{method:'POST',body:JSON.stringify({content,visibility:$('#post-visibility').value})});$('#new-post').value='';await loadSocial();socialStatus('تم نشر منشورك.')}catch(e){socialStatus('تعذر النشر: '+e.message)}});
+$('#save-profile').addEventListener('click',async()=>{try{if(!sessionToken)throw new Error('سجّل الدخول أولاً');const d=await socialRequest('/api/social/profile',{method:'PATCH',body:JSON.stringify({handle:$('#social-handle').value.trim(),display_name:$('#social-display').value.trim(),bio:$('#social-bio').value.trim()})});socialStatus('تم حفظ الملف الشخصي باسم @'+d.user.handle)}catch(e){socialStatus('تعذر حفظ الملف الشخصي: '+e.message)}});
 function add(text,kind='assistant'){const el=document.createElement('div');el.className='msg '+kind;el.textContent=text;messages.appendChild(el);messages.scrollTop=messages.scrollHeight}
 async function check(){if(!base())throw new Error('أدخل عنوان الخادم أولاً');const res=await fetch(base()+'/api/health');if(!res.ok)throw new Error('الخادم أعاد الحالة '+res.status);return res.json()}
 connectBtn.addEventListener('click',async()=>{connectBtn.disabled=true;statusEl.textContent='جارٍ الاتصال…';try{const data=await check();sessionStorage.setItem('imd_api_url',base());sessionStorage.setItem('imd_api_token',token.value);statusEl.textContent='متصل — '+(data.app||'IMD DAWSA AI');add('تم الاتصال بالخادم بنجاح.','assistant')}catch(e){statusEl.textContent='فشل الاتصال';add('تعذر الاتصال: '+e.message,'error')}finally{connectBtn.disabled=false}});
