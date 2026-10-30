@@ -4,7 +4,7 @@ import pyotp
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app import main
+from app import main, account_security
 from app.auth import hash_password, verify_password, issue_access_token, read_access_token
 
 
@@ -21,6 +21,7 @@ def configure_email(monkeypatch):
         return True
 
     monkeypatch.setattr(main, "send_verification_email", fake_send)
+    monkeypatch.setattr(account_security, "send_verification_email", fake_send)
     return sent_tokens
 
 
