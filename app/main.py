@@ -20,6 +20,12 @@ from .database import (
     create_user, get_user, get_user_by_email, save_conversation,
 )
 from .llm import generate_reply, ModelUnavailable
+from .account_security import (
+    router as account_security_router,
+    create_verification_token,
+    send_verification_email,
+    _new_challenge,
+)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -30,7 +36,8 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title=settings.app_name, version="0.5.0", lifespan=lifespan)
+app = FastAPI(title=settings.app_name, version="0.6.0", lifespan=lifespan)
+app.include_router(account_security_router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=list(settings.cors_origins),
@@ -45,6 +52,8 @@ _rate_buckets = defaultdict(deque)
 _RATE_POLICIES = {
     "/api/auth/login": (10, 60),
     "/api/auth/register": (5, 60),
+    "/api/auth/resend-verification": (3, 300),
+    "/api/auth/2fa/login": (8, 300),
     "/api/chat": (30, 60),
 }
 
@@ -188,6 +197,8 @@ async def readiness():
 @app.post("/api/auth/register", status_code=201)
 async def register(request: RegisterRequest):
     require_auth_configuration()
+    if not settings.resend_api_key or not settings.email_from or not settings.api_public_url.startswith("https://"):
+        raise HTTPException(status_code=503, detail="Email verification is not configured. Set RESEND_API_KEY, EMAIL_FROM and HTTPS API_PUBLIC_URL.")
     email = request.email.strip().lower()
     if not re.fullmatch(r"[^\s@]+@[^\s@]+\.[^\s@]+", email):
         raise HTTPException(status_code=422, detail="Enter a valid email address")
@@ -199,7 +210,14 @@ async def register(request: RegisterRequest):
         user = create_user(email, hash_password(request.password), request.display_name)
     except sqlite3.IntegrityError as exc:
         raise HTTPException(status_code=409, detail="An account with this email already exists") from exc
-    return {"user": user, "access_token": issue_access_token(user["id"]), "token_type": "bearer"}
+    token = create_verification_token(user["id"])
+    try:
+        sent = await send_verification_email(email, token)
+    except httpx.HTTPError:
+        sent = False
+    if not sent:
+        raise HTTPException(status_code=503, detail="Account created, but verification email delivery failed. Use resend-verification after fixing email settings.")
+    return {"user": user, "email_verification_required": True, "message": "Check your inbox and verify your email before signing in."}
 
 
 @app.post("/api/auth/login")
@@ -209,6 +227,10 @@ async def login(request: LoginRequest):
     if not user_record or not verify_password(request.password, user_record["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     user = get_user(user_record["id"])
+    if not user or not user.get("email_verified"):
+        raise HTTPException(status_code=403, detail="Verify your email address before signing in")
+    if user.get("totp_enabled"):
+        return {"requires_2fa": True, "challenge_token": _new_challenge(user["id"]), "token_type": "2fa"}
     return {"user": user, "access_token": issue_access_token(user["id"]), "token_type": "bearer"}
 
 
