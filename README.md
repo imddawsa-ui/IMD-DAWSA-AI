@@ -43,12 +43,14 @@ Social API:
 
 The current authentication and messaging foundation is not a complete production identity platform: password reset, refresh-token rotation/revocation, device/session management and shared distributed abuse controls remain required.
 
-## Windows setup
-1. Install Python 3.11+ and Ollama.
-2. Copy `.env.example` to `.env`; generate and set `AUTH_SECRET_KEY` locally.
-3. Run `install_windows.bat`.
-4. Run `pull_model.bat` once (model download requires internet).
-5. Run `start_windows.bat` and open http://127.0.0.1:8000.
+## Windows setup — zero-cost local mode
+1. Install Python 3.11+ and the free Ollama application.
+2. Run `install_windows.bat`. It creates the virtual environment, installs Python dependencies and generates a unique local `AUTH_SECRET_KEY` if one is not already configured.
+3. Run `pull_model.bat` once while online. It downloads `qwen2.5:3b`; allow enough free disk space. CPU inference may be slow on 8 GB RAM.
+4. Start Ollama, then run `start_windows.bat` and open http://127.0.0.1:8000.
+5. Keep the server bound to `127.0.0.1` for local-only use. Do not expose it to the internet without production security and deployment work.
+
+Email/password registration requires a configured email sender and HTTPS public API URL. This is intentionally not bypassed by the zero-cost installer. For a zero-cost personal setup, use the local AI chat without account registration until a secure local identity flow is implemented.
 
 After the model is downloaded, local chat can run offline. Account sessions are local to the configured backend/database.
 
