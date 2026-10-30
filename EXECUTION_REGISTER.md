@@ -225,3 +225,11 @@ Therefore, at this commit the following slices are now **TESTED** by CI: bounded
 - Added a Web people-discovery panel with follow/unfollow controls.
 - Automated test verifies short-query rejection, exclusion of unverified users and the current account, and follow-state changes.
 - In GitHub Actions run `41013012564`, the Python job completed successfully with **19 tests passed** and the Web client job completed successfully. The Android job was still running at the time this note was written; no full-workflow success is claimed for this run.
+
+## Notifications and discovery verification — 2026-10-30
+
+- Added persistent in-app notifications for new followers, post likes, comments, direct messages and marketplace enquiries. Notifications are stored per recipient, and read/read-all actions are authenticated and owner-scoped.
+- Added the Web notification inbox with manual refresh, per-item read and mark-all-read controls.
+- Added verified-account people search and follow/unfollow controls to the Web social area.
+- GitHub Actions run `41013193090`: Python job **PASS** with 20 tests passed; Web client check **PASS**. Android debug build was still running when this entry was written, so this run is not yet marked fully green.
+- Notifications are in-app only at this stage. Push notifications, email notification preferences, delivery retries and realtime updates remain unimplemented.
