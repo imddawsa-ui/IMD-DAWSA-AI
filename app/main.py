@@ -342,7 +342,8 @@ async def toggle_post_like(post_id: int, authorization: str | None = Header(defa
     if not user:
         raise HTTPException(status_code=401, detail="Authentication required")
     with connect() as db:
-        if not db.execute("SELECT 1 FROM posts WHERE id = ?", (post_id,)).fetchone():
+        post = db.execute("SELECT id, user_id, visibility FROM posts WHERE id = ?", (post_id,)).fetchone()
+        if not post or not can_view_post(db, post, user["id"]):
             raise HTTPException(status_code=404, detail="Post not found")
         existing = db.execute(
             "SELECT 1 FROM post_likes WHERE user_id = ? AND post_id = ?", (user["id"], post_id)
