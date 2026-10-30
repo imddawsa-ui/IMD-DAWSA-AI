@@ -1,7 +1,45 @@
+import time
+
+import pyotp
 from fastapi.testclient import TestClient
+
 from app.main import app
 from app import main
 from app.auth import hash_password, verify_password, issue_access_token, read_access_token
+
+
+def configure_email(monkeypatch):
+    monkeypatch.setattr(main.settings, "auth_secret_key", "test-secret-key-that-is-at-least-32-chars")
+    monkeypatch.setattr(main.settings, "resend_api_key", "re_test_key")
+    monkeypatch.setattr(main.settings, "email_from", "IMD DAWSA AI <verify@example.com>")
+    monkeypatch.setattr(main.settings, "api_public_url", "https://api.example.com")
+    sent_tokens = []
+
+    async def fake_send(email, token):
+        sent_tokens.append(token)
+        return True
+
+    monkeypatch.setattr(main, "send_verification_email", fake_send)
+    return sent_tokens
+
+
+def register_verified(client, sent_tokens, email, name):
+    response = client.post("/api/auth/register", json={
+        "email": email, "password": "A-strong-password-123", "display_name": name
+    })
+    assert response.status_code == 201, response.text
+    user = response.json()["user"]
+    token = sent_tokens.pop(0)
+    # A mail scanner opening the GET link must not consume the one-time token.
+    assert client.get("/api/auth/verify-email", params={"token": token}).status_code == 200
+    verified = client.post("/api/auth/verify-email", json={"token": token})
+    assert verified.status_code == 200
+    assert client.post("/api/auth/verify-email", json={"token": token}).status_code == 400
+    login = client.post("/api/auth/login", json={
+        "email": email, "password": "A-strong-password-123"
+    })
+    assert login.status_code == 200
+    return {"Authorization": "Bearer " + login.json()["access_token"]}, user
 
 
 def test_health_and_history_endpoints():
@@ -26,8 +64,7 @@ def test_chat_saves_reply(monkeypatch):
 
 def test_blank_chat_is_rejected():
     with TestClient(app) as client:
-        response = client.post("/api/chat", json={"message": "   "})
-        assert response.status_code == 422
+        assert client.post("/api/chat", json={"message": "   "}).status_code == 422
 
 
 def test_password_hashing():
@@ -43,26 +80,45 @@ def test_signed_tokens(monkeypatch):
     assert read_access_token(token + "x") is None
 
 
-def test_register_login_and_user_scoped_history(monkeypatch, tmp_path):
+def test_register_requires_email_provider(monkeypatch, tmp_path):
     monkeypatch.setattr(main.settings, "auth_secret_key", "test-secret-key-that-is-at-least-32-chars")
+    monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "no-mail.sqlite3"))
+    monkeypatch.setattr(main.settings, "resend_api_key", "")
+    with TestClient(app) as client:
+        response = client.post("/api/auth/register", json={
+            "email": "person@example.com", "password": "A-strong-password-123", "display_name": "Person"
+        })
+        assert response.status_code == 503
+
+
+def test_register_verify_login_and_user_scoped_history(monkeypatch, tmp_path):
+    sent = configure_email(monkeypatch)
     monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "auth-test.sqlite3"))
+
     async def fake_reply(message):
         return "Private answer"
     monkeypatch.setattr(main, "generate_reply", fake_reply)
     with TestClient(app) as client:
-        registered = client.post("/api/auth/register", json={
+        unverified = client.post("/api/auth/register", json={
             "email": "person@example.com", "password": "A-strong-password-123", "display_name": "Person"
         })
-        assert registered.status_code == 201
-        token = registered.json()["access_token"]
-        headers = {"Authorization": "Bearer " + token}
+        assert unverified.status_code == 201
+        assert "access_token" not in unverified.json()
+        assert client.post("/api/auth/login", json={
+            "email": "person@example.com", "password": "A-strong-password-123"
+        }).status_code == 403
+
+        token = sent.pop(0)
+        assert client.post("/api/auth/verify-email", json={"token": token}).status_code == 200
+        login = client.post("/api/auth/login", json={
+            "email": "person@example.com", "password": "A-strong-password-123"
+        })
+        assert login.status_code == 200
+        headers = {"Authorization": "Bearer " + login.json()["access_token"]}
         assert client.get("/api/auth/me", headers=headers).status_code == 200
         assert client.post("/api/chat", json={"message": "secret"}, headers=headers).status_code == 200
         assert len(client.get("/api/conversations", headers=headers).json()["items"]) == 1
         assert client.get("/api/conversations").json()["items"] == []
-        assert client.post("/api/auth/login", json={
-            "email": "person@example.com", "password": "A-strong-password-123"
-        }).status_code == 200
         assert client.post("/api/auth/login", json={
             "email": "person@example.com", "password": "wrong-password"
         }).status_code == 401
@@ -71,19 +127,64 @@ def test_register_login_and_user_scoped_history(monkeypatch, tmp_path):
         }).status_code == 409
 
 
+def test_totp_setup_login_and_single_use_recovery_codes(monkeypatch, tmp_path):
+    sent = configure_email(monkeypatch)
+    monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "totp-test.sqlite3"))
+    with TestClient(app) as client:
+        headers, user = register_verified(client, sent, "mfa@example.com", "MFA User")
+
+        setup = client.post("/api/auth/2fa/setup", headers=headers)
+        assert setup.status_code == 200
+        assert setup.json()["qr_code_png_base64"]
+        secret = setup.json()["secret"]
+        first_code = pyotp.TOTP(secret).now()
+        enabled = client.post("/api/auth/2fa/enable", headers=headers, json={"code": first_code})
+        assert enabled.status_code == 200
+        recovery = enabled.json()["recovery_codes"]
+        assert len(recovery) == 10
+
+        login = client.post("/api/auth/login", json={
+            "email": "mfa@example.com", "password": "A-strong-password-123"
+        })
+        assert login.status_code == 200
+        assert login.json()["requires_2fa"] is True
+        assert "access_token" not in login.json()
+
+        # Use the next time-step code so it is not the same code used to activate MFA.
+        next_code = pyotp.TOTP(secret).at((int(time.time()) // 30 + 1) * 30)
+        completed = client.post("/api/auth/2fa/login", json={
+            "challenge_token": login.json()["challenge_token"], "code": next_code
+        })
+        assert completed.status_code == 200
+        assert completed.json()["access_token"]
+        replay = client.post("/api/auth/2fa/login", json={
+            "challenge_token": login.json()["challenge_token"], "code": next_code
+        })
+        assert replay.status_code == 401
+
+        second_login = client.post("/api/auth/login", json={
+            "email": "mfa@example.com", "password": "A-strong-password-123"
+        })
+        recovery_login = client.post("/api/auth/2fa/login", json={
+            "challenge_token": second_login.json()["challenge_token"], "code": recovery[0]
+        })
+        assert recovery_login.status_code == 200
+
+        third_login = client.post("/api/auth/login", json={
+            "email": "mfa@example.com", "password": "A-strong-password-123"
+        })
+        reused = client.post("/api/auth/2fa/login", json={
+            "challenge_token": third_login.json()["challenge_token"], "code": recovery[0]
+        })
+        assert reused.status_code == 401
+
 
 def test_social_profile_posts_follow_likes_comments(monkeypatch, tmp_path):
-    monkeypatch.setattr(main.settings, "auth_secret_key", "test-secret-key-that-is-at-least-32-chars")
+    sent = configure_email(monkeypatch)
     monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "social-test.sqlite3"))
     with TestClient(app) as client:
-        def register(email, name):
-            response = client.post("/api/auth/register", json={
-                "email": email, "password": "A-strong-password-123", "display_name": name
-            })
-            assert response.status_code == 201
-            return {"Authorization": "Bearer " + response.json()["access_token"]}, response.json()["user"]
-        alice_headers, alice = register("alice@example.com", "Alice")
-        bob_headers, bob = register("bob@example.com", "Bob")
+        alice_headers, alice = register_verified(client, sent, "alice@example.com", "Alice")
+        bob_headers, bob = register_verified(client, sent, "bob@example.com", "Bob")
         profile = client.patch("/api/social/profile", headers=alice_headers, json={
             "handle": "alice", "bio": "Hello community"
         })
@@ -117,16 +218,11 @@ def test_security_headers_and_authenticated_chat_requirement(monkeypatch, tmp_pa
 
 
 def test_private_post_comments_are_not_visible_to_other_users(monkeypatch, tmp_path):
-    monkeypatch.setattr(main.settings, "auth_secret_key", "test-secret-key-that-is-at-least-32-chars")
+    sent = configure_email(monkeypatch)
     monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "privacy-test.sqlite3"))
     with TestClient(app) as client:
-        def register(email, name):
-            response = client.post("/api/auth/register", json={
-                "email": email, "password": "A-strong-password-123", "display_name": name
-            })
-            return {"Authorization": "Bearer " + response.json()["access_token"]}
-        owner = register("owner@example.com", "Owner")
-        stranger = register("stranger@example.com", "Stranger")
+        owner, _ = register_verified(client, sent, "owner@example.com", "Owner")
+        stranger, _ = register_verified(client, sent, "stranger@example.com", "Stranger")
         post = client.post("/api/social/posts", headers=owner, json={
             "content": "Private note", "visibility": "private"
         }).json()
