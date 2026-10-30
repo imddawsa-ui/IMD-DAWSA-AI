@@ -258,6 +258,34 @@ def test_social_profile_posts_follow_likes_comments(monkeypatch, tmp_path):
         assert client.get(f"/api/social/users/{alice['id']}").json()["user"]["follower_count"] == 1
 
 
+def test_marketplace_listing_search_and_enquiries(monkeypatch, tmp_path):
+    sent = configure_email(monkeypatch)
+    monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "market-test.sqlite3"))
+    with TestClient(app) as client:
+        seller_headers, seller = register_verified(client, sent, "seller@example.com", "Seller")
+        buyer_headers, buyer = register_verified(client, sent, "buyer@example.com", "Buyer")
+        listing = client.post("/api/marketplace/listings", headers=seller_headers, json={
+            "title": "Used laptop", "description": "Good condition", "category": "electronics",
+            "price_amount": 250, "currency": "USD",
+        })
+        assert listing.status_code == 201
+        listing_id = listing.json()["id"]
+        search = client.get("/api/marketplace/listings", params={"q": "laptop", "category": "electronics"})
+        assert search.status_code == 200
+        assert search.json()["items"][0]["seller_id"] == seller["id"]
+        enquiry = client.post(
+            f"/api/marketplace/listings/{listing_id}/enquiries", headers=buyer_headers,
+            json={"message": "Is this still available?"},
+        )
+        assert enquiry.status_code == 201
+        assert client.get("/api/marketplace/my-enquiries", headers=buyer_headers).json()["items"][0]["listing_id"] == listing_id
+        assert client.post(
+            f"/api/marketplace/listings/{listing_id}/enquiries", headers=seller_headers,
+            json={"message": "My own item"},
+        ).status_code == 400
+        assert client.post("/api/marketplace/listings", json={"title": "No auth"}).status_code == 401
+
+
 def test_private_direct_messages_are_scoped_to_participants(monkeypatch, tmp_path):
     sent = configure_email(monkeypatch)
     monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "messages-test.sqlite3"))
