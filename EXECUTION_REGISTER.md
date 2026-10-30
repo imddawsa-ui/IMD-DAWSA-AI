@@ -411,3 +411,14 @@ This audit records live connector checks performed after the latest source commi
 3. Select a backend persistence/deployment path that is demonstrably zero-cost before provisioning anything. Local FastAPI + SQLite + Ollama remains the working offline path; public backend hosting is not yet verified.
 4. Continue the translation integration with an explicitly configured, tested engine and accurate language-pair catalog; no universal translation claim.
 5. Build missing production account recovery, token/session lifecycle, abuse controls, end-to-end tests and device smoke tests.
+## NILE ONE visual identity implementation — 2026-10-30
+
+- Added a custom NILE ONE SVG app mark at `web/icon.svg`.
+- Added original SVG visual assets for the hero, AI assistant, learning, marketplace and creative tools under `web/assets/`.
+- Updated the PWA manifest to use the NILE ONE HUMAN name, English metadata, and the new brand colors.
+- Added a responsive NILE ONE hero and capability cards to `web/index.html`.
+- Added four persistent web visual themes: Aurora Dark, Studio Light, Nebula Purple and Emerald Focus.
+- Added an Android vector launcher icon and updated the Android application label to NILE ONE HUMAN.
+- CI run `41109413646` currently reports the engineering-quality and web-client jobs successful; backend and Android jobs were still running at the time of this entry.
+- The separate GitHub Pages deployment workflow has reported failures on recent pushes. The presence of a Pages project is not evidence of a successful published site. Deployment remains unverified until a deployment run succeeds and the public URL is smoke-tested.
+- Visual assets are original vector artwork. The generated promotional collage is a concept reference, not a claim that all pictured product modules exist.
