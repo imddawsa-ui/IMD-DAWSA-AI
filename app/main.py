@@ -136,6 +136,17 @@ class CommentCreate(BaseModel):
 class DirectMessageCreate(BaseModel):
     content: str = Field(min_length=1, max_length=4000)
 
+class ListingCreate(BaseModel):
+    title: str = Field(min_length=3, max_length=120)
+    description: str = Field(default="", max_length=4000)
+    category: str = Field(default="general", min_length=2, max_length=50)
+    price_amount: float | None = Field(default=None, gt=0, le=1000000000)
+    currency: str = Field(default="USD", pattern=r"^[A-Z]{3}$")
+
+
+class MarketplaceEnquiryCreate(BaseModel):
+    message: str = Field(min_length=5, max_length=2000)
+
 
 def check_access(token: str | None):
     if settings.api_access_token and not secrets.compare_digest(token or "", settings.api_access_token):
@@ -423,6 +434,101 @@ async def list_post_comments(
             FROM post_comments c JOIN users u ON u.id = c.user_id
             WHERE c.post_id = ? ORDER BY c.id ASC LIMIT ?
         """, (post_id, max(1, min(limit, 100)))).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
+@app.get("/api/marketplace/listings")
+async def marketplace_listings(
+    q: str = "",
+    category: str = "",
+    limit: int = 30,
+):
+    query = "%" + q.strip().replace("%", "\\%").replace("_", "\\_") + "%"
+    with connect() as db:
+        rows = db.execute("""
+            SELECT l.id, l.title, l.description, l.category, l.price_amount, l.currency,
+                   l.created_at, u.id AS seller_id, u.display_name AS seller_name, u.handle AS seller_handle
+            FROM marketplace_listings l JOIN users u ON u.id = l.seller_id
+            WHERE l.status = 'active' AND u.email_verified = 1
+              AND (? = '' OR l.title LIKE ? ESCAPE '\\' OR l.description LIKE ? ESCAPE '\\')
+              AND (? = '' OR l.category = ?)
+            ORDER BY l.id DESC LIMIT ?
+        """, (q.strip(), query, query, category.strip().lower(), category.strip().lower(), max(1, min(limit, 100)))).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
+@app.post("/api/marketplace/listings", status_code=201)
+async def create_marketplace_listing(
+    request: ListingCreate,
+    authorization: str | None = Header(default=None),
+):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    with connect() as db:
+        cursor = db.execute("""
+            INSERT INTO marketplace_listings
+                (seller_id, title, description, category, price_amount, currency)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (user["id"], request.title.strip(), request.description.strip(),
+              request.category.strip().lower(), request.price_amount, request.currency))
+        listing_id = cursor.lastrowid
+    return {"id": listing_id, "title": request.title.strip(), "status": "active"}
+
+
+@app.get("/api/marketplace/listings/{listing_id}")
+async def marketplace_listing(listing_id: int):
+    with connect() as db:
+        row = db.execute("""
+            SELECT l.id, l.title, l.description, l.category, l.price_amount, l.currency,
+                   l.created_at, u.id AS seller_id, u.display_name AS seller_name, u.handle AS seller_handle
+            FROM marketplace_listings l JOIN users u ON u.id = l.seller_id
+            WHERE l.id = ? AND l.status = 'active' AND u.email_verified = 1
+        """, (listing_id,)).fetchone()
+    if not row:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    return {"listing": dict(row)}
+
+
+@app.post("/api/marketplace/listings/{listing_id}/enquiries", status_code=201)
+async def create_marketplace_enquiry(
+    listing_id: int,
+    request: MarketplaceEnquiryCreate,
+    authorization: str | None = Header(default=None),
+):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    with connect() as db:
+        listing = db.execute(
+            "SELECT seller_id FROM marketplace_listings WHERE id = ? AND status = 'active'",
+            (listing_id,),
+        ).fetchone()
+        if not listing:
+            raise HTTPException(status_code=404, detail="Listing not found")
+        if int(listing["seller_id"]) == int(user["id"]):
+            raise HTTPException(status_code=400, detail="You cannot enquire about your own listing")
+        cursor = db.execute(
+            "INSERT INTO marketplace_enquiries (listing_id, buyer_id, message) VALUES (?, ?, ?)",
+            (listing_id, user["id"], request.message.strip()),
+        )
+    return {"id": cursor.lastrowid, "listing_id": listing_id, "created": True}
+
+
+@app.get("/api/marketplace/my-enquiries")
+async def my_marketplace_enquiries(authorization: str | None = Header(default=None)):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    with connect() as db:
+        rows = db.execute("""
+            SELECT e.id, e.listing_id, e.message, e.created_at, l.title,
+                   l.seller_id, s.display_name AS seller_name
+            FROM marketplace_enquiries e
+            JOIN marketplace_listings l ON l.id = e.listing_id
+            JOIN users s ON s.id = l.seller_id
+            WHERE e.buyer_id = ? ORDER BY e.id DESC LIMIT 100
+        """, (user["id"],)).fetchall()
     return {"items": [dict(row) for row in rows]}
 
 
