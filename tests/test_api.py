@@ -285,6 +285,42 @@ def test_marketplace_listing_search_and_enquiries(monkeypatch, tmp_path):
         assert client.post("/api/marketplace/listings", json={"title": "No auth"}).status_code == 401
 
 
+def test_marketplace_seller_dashboard_is_scoped_to_own_listings(monkeypatch, tmp_path):
+    sent = configure_email(monkeypatch)
+    monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "seller-dashboard-test.sqlite3"))
+    with TestClient(app) as client:
+        seller_headers, seller = register_verified(client, sent, "dashboard-seller@example.com", "Seller")
+        other_seller_headers, _ = register_verified(client, sent, "dashboard-other@example.com", "Other Seller")
+        buyer_headers, buyer = register_verified(client, sent, "dashboard-buyer@example.com", "Buyer")
+
+        own_listing = client.post("/api/marketplace/listings", headers=seller_headers, json={
+            "title": "Seller camera", "description": "Camera", "category": "electronics"
+        }).json()
+        other_listing = client.post("/api/marketplace/listings", headers=other_seller_headers, json={
+            "title": "Other camera", "description": "Camera", "category": "electronics"
+        }).json()
+        enquiry = client.post(
+            f"/api/marketplace/listings/{own_listing['id']}/enquiries",
+            headers=buyer_headers, json={"message": "Can I collect it today?"},
+        )
+        assert enquiry.status_code == 201
+
+        own_items = client.get("/api/marketplace/my-listings", headers=seller_headers).json()["items"]
+        assert [item["id"] for item in own_items] == [own_listing["id"]]
+        assert own_items[0]["enquiry_count"] == 1
+
+        inbox = client.get("/api/marketplace/seller-enquiries", headers=seller_headers).json()["items"]
+        assert len(inbox) == 1
+        assert inbox[0]["listing_id"] == own_listing["id"]
+        assert inbox[0]["buyer_id"] == buyer["id"]
+        assert inbox[0]["listing_title"] == "Seller camera"
+
+        assert client.get("/api/marketplace/my-listings", headers=buyer_headers).json()["items"] == []
+        assert client.get("/api/marketplace/seller-enquiries", headers=buyer_headers).json()["items"] == []
+        assert client.get("/api/marketplace/my-listings").status_code == 401
+        assert client.get("/api/marketplace/seller-enquiries").status_code == 401
+
+
 def test_private_direct_messages_are_scoped_to_participants(monkeypatch, tmp_path):
     sent = configure_email(monkeypatch)
     monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "messages-test.sqlite3"))
