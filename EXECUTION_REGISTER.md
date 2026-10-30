@@ -233,3 +233,28 @@ Therefore, at this commit the following slices are now **TESTED** by CI: bounded
 - Added verified-account people search and follow/unfollow controls to the Web social area.
 - GitHub Actions run `41013193090`: Python job **PASS** with 20 tests passed; Web client check **PASS**. Android debug build was still running when this entry was written, so this run is not yet marked fully green.
 - Notifications are in-app only at this stage. Push notifications, email notification preferences, delivery retries and realtime updates remain unimplemented.
+
+
+## Cloudflare deployment foundation — 2026-10-30
+
+| Resource | Status | Evidence | Boundary |
+|---|---|---|---|
+| Cloudflare account access | VERIFIED | Account API authenticated; account ID available to deployment connector | Does not imply all product APIs are live |
+| Cloudflare D1 database | VERIFIED | Database `imd-dawsa-ai` created in EEUR; UUID `1cceda46-2d87-47b3-ab87-68e84c47b9eb` | Production data migration from existing SQLite has not happened |
+| D1 schema baseline | VERIFIED | `cloudflare/schema.sql` applied; 11 application tables and indexes confirmed through D1 query | Schema is an initial baseline, not the complete future product schema |
+| Cloudflare Worker API shell | IMPLEMENTED | `imd-dawsa-ai-api` uploaded with D1 binding and observability enabled | Only health/readiness endpoints are implemented; other API routes return 501 |
+| Workers.dev subdomain | VERIFIED | Account subdomain `imddawsa-ai` created; Worker subdomain enabled | Public HTTP smoke test could not be performed from this execution environment |
+| Cloudflare Pages project | IMPLEMENTED | `imd-dawsa-ai.pages.dev` project created | No deployment exists yet; latest_deployment is null |
+| Pages Git integration | BLOCKED | Cloudflare source connection API returned HTTP 401 / internal Pages Git installation issue | Need repair/reinstall GitHub integration or deploy static assets directly |
+| Worker live endpoint verification | BLOCKED | Worker script upload and subdomain activation succeeded; external fetch from this environment is blocked by network policy | Must test public URL from browser/device or approved external probe |
+| API migration from FastAPI | PLANNED | Current FastAPI remains the working feature backend foundation | Migrate one module at a time with parity tests; do not point clients to the Worker shell yet |
+
+### Current Cloudflare resources
+
+- Pages project: `https://imd-dawsa-ai.pages.dev` (project created, not yet deployed).
+- Intended Worker API hostname: `https://imd-dawsa-ai-api.imddawsa-ai.workers.dev` (Worker deployed; public reachability not yet independently verified).
+- D1 database name: `imd-dawsa-ai`; region returned by Cloudflare: `EEUR`.
+
+### Safe migration rule
+
+The existing FastAPI/Ollama backend remains the functional application backend until Cloudflare modules have feature parity and end-to-end tests. The Worker health shell is not a replacement for authentication, social, messaging, marketplace, AI or other product APIs. Never represent unimplemented Worker routes as complete.
