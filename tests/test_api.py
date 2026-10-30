@@ -495,3 +495,24 @@ def test_auth_responses_are_not_cached(monkeypatch):
         assert response.status_code == 401
         assert response.headers["cache-control"] == "no-store"
         assert len(response.headers["x-request-id"]) == 32
+
+
+def test_resource_diagnostics_are_authenticated_and_secret_safe(monkeypatch, tmp_path):
+    monkeypatch.setattr(main.settings, "auth_secret_key", "test-secret-key-that-is-at-least-32-chars")
+    monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "private.sqlite3"))
+    with TestClient(app) as client:
+        assert client.get("/api/system/resources").status_code == 401
+        assert client.get(
+            "/api/system/resources", headers={"Authorization": "Bearer invalid"}
+        ).status_code == 401
+
+
+def test_resource_snapshot_reports_only_host_capabilities(tmp_path):
+    from app.diagnostics import collect_resource_snapshot
+
+    snapshot = collect_resource_snapshot(tmp_path / "private.sqlite3")
+    assert snapshot["diagnostics_scope"] == "host_resources_only"
+    assert snapshot["cpu_logical_count"] is None or snapshot["cpu_logical_count"] > 0
+    assert "private.sqlite3" not in str(snapshot)
+    assert "AUTH_SECRET_KEY" not in str(snapshot)
+    assert "username" not in snapshot
