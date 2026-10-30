@@ -245,6 +245,32 @@ def test_totp_setup_login_and_single_use_recovery_codes(monkeypatch, tmp_path):
         assert not normal_login.json().get("requires_2fa", False)
 
 
+def test_social_user_discovery_requires_query_and_returns_verified_profiles(monkeypatch, tmp_path):
+    sent = configure_email(monkeypatch)
+    monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "user-discovery-test.sqlite3"))
+    with TestClient(app) as client:
+        alice_headers, alice = register_verified(client, sent, "discover-alice@example.com", "Alice")
+        bob_headers, bob = register_verified(client, sent, "discover-bob@example.com", "Bob Builder")
+        unverified = client.post("/api/auth/register", json={
+            "email": "discover-hidden@example.com",
+            "password": "A-strong-password-123",
+            "display_name": "Hidden Bob",
+        })
+        assert unverified.status_code == 201
+
+        assert client.get("/api/social/users", params={"q": "B"}).status_code == 422
+        results = client.get("/api/social/users", params={"q": "Bob"}, headers=alice_headers)
+        assert results.status_code == 200
+        items = results.json()["items"]
+        assert [item["id"] for item in items] == [bob["id"]]
+        assert items[0]["is_following"] is False
+
+        assert client.post(f"/api/social/users/{bob['id']}/follow", headers=alice_headers).status_code == 200
+        followed = client.get("/api/social/users", params={"q": "Bob"}, headers=alice_headers).json()["items"]
+        assert followed[0]["is_following"] is True
+        assert all(item["id"] != alice["id"] for item in followed)
+
+
 def test_social_profile_posts_follow_likes_comments(monkeypatch, tmp_path):
     sent = configure_email(monkeypatch)
     monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "social-test.sqlite3"))
