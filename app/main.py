@@ -281,6 +281,33 @@ async def social_feed(
     return {"items": [dict(row) for row in rows]}
 
 
+@app.get("/api/social/users")
+async def search_social_users(
+    q: str = "",
+    limit: int = 20,
+    authorization: str | None = Header(default=None),
+):
+    query_text = q.strip()
+    if len(query_text) < 2:
+        raise HTTPException(status_code=422, detail="Search query must contain at least 2 characters")
+    user = current_user(authorization)
+    viewer_id = user["id"] if user else None
+    pattern = "%" + query_text.replace("%", "\\%").replace("_", "\\_") + "%"
+    with connect() as db:
+        rows = db.execute("""
+            SELECT u.id, u.display_name, u.handle, u.bio,
+                   (SELECT COUNT(*) FROM follows f WHERE f.following_id = u.id) AS follower_count,
+                   EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = ? AND f.following_id = u.id) AS is_following
+            FROM users u
+            WHERE u.email_verified = 1
+              AND u.id IS NOT ?
+              AND (u.display_name LIKE ? ESCAPE '\\' OR u.handle LIKE ? ESCAPE '\\')
+            ORDER BY follower_count DESC, u.id DESC
+            LIMIT ?
+        """, (viewer_id, viewer_id, pattern, pattern, max(1, min(limit, 30)))).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
 @app.get("/api/social/users/{user_id}")
 async def social_profile(user_id: int):
     with connect() as db:
