@@ -61,22 +61,40 @@ _RATE_POLICIES = {
 @app.middleware("http")
 async def security_middleware(request, call_next):
     path = request.url.path
+    request_id = secrets.token_hex(16)
     policy = _RATE_POLICIES.get(path) if request.method == "POST" else None
     if policy:
         limit, window = policy
         client_ip = request.client.host if request.client else "unknown"
         key = (client_ip, path)
         now = time.monotonic()
+        # Expire idle keys and cap memory growth under high-cardinality traffic.
+        if len(_rate_buckets) > 10000:
+            expired_before = now - max(duration for _, duration in _RATE_POLICIES.values())
+            for old_key in list(_rate_buckets.keys()):
+                old_bucket = _rate_buckets[old_key]
+                if not old_bucket or old_bucket[-1] < expired_before:
+                    _rate_buckets.pop(old_key, None)
         bucket = _rate_buckets[key]
         while bucket and now - bucket[0] >= window:
             bucket.popleft()
         if len(bucket) >= limit:
             from fastapi.responses import JSONResponse
-            return JSONResponse(status_code=429, content={"detail": "Too many requests. Please try again later."},
-                                headers={"Retry-After": str(window)})
+            response = JSONResponse(
+                status_code=429,
+                content={"detail": "Too many requests. Please try again later.", "request_id": request_id},
+                headers={"Retry-After": str(window), "X-Request-ID": request_id},
+            )
+            response.headers["Cache-Control"] = "no-store"
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            response.headers["X-Frame-Options"] = "DENY"
+            response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+            return response
         bucket.append(now)
 
     response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    response.headers["Cache-Control"] = "no-store" if path.startswith("/api/auth/") else response.headers.get("Cache-Control", "no-cache")
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
