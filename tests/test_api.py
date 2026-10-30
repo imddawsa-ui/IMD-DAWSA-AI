@@ -476,3 +476,22 @@ def test_translation_request_validates_language_codes():
             "text": "Hello", "source": "auto", "target": "not a language!"
         })
         assert response.status_code == 422
+
+
+def test_request_id_and_sensitive_cache_headers(monkeypatch):
+    monkeypatch.setattr(main.settings, "auth_secret_key", "test-secret-key-that-is-at-least-32-chars")
+    with TestClient(app) as client:
+        health = client.get("/api/health")
+        assert health.status_code == 200
+        assert len(health.headers["x-request-id"]) == 32
+        assert health.headers["cache-control"] == "no-cache"
+        assert health.headers["x-content-type-options"] == "nosniff"
+
+
+def test_auth_responses_are_not_cached(monkeypatch):
+    monkeypatch.setattr(main.settings, "auth_secret_key", "test-secret-key-that-is-at-least-32-chars")
+    with TestClient(app) as client:
+        response = client.get("/api/auth/me")
+        assert response.status_code == 401
+        assert response.headers["cache-control"] == "no-store"
+        assert len(response.headers["x-request-id"]) == 32
