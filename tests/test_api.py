@@ -455,3 +455,24 @@ def test_private_post_comments_are_not_visible_to_other_users(monkeypatch, tmp_p
             "content": "Can I see this?"
         }).status_code == 404
         assert client.get(f"/api/social/posts/{post_id}/comments", headers=owner).status_code == 200
+
+
+def test_translation_endpoints_are_explicitly_disabled_without_provider(monkeypatch):
+    monkeypatch.setattr(main.settings, "translation_api_url", "")
+    with TestClient(app) as client:
+        catalog = client.get("/api/i18n/languages")
+        assert catalog.status_code == 200
+        assert catalog.json() == {"enabled": False, "provider": None, "languages": []}
+        response = client.post("/api/i18n/translate", json={
+            "text": "Hello world", "source": "auto", "target": "ar"
+        })
+        assert response.status_code == 503
+        assert "not configured" in response.json()["detail"].lower()
+
+
+def test_translation_request_validates_language_codes():
+    with TestClient(app) as client:
+        response = client.post("/api/i18n/translate", json={
+            "text": "Hello", "source": "auto", "target": "not a language!"
+        })
+        assert response.status_code == 422
