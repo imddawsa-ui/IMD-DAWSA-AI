@@ -67,7 +67,7 @@ def test_health_and_history_endpoints():
 
 
 def test_chat_saves_reply(monkeypatch):
-    async def fake_reply(message):
+    async def fake_reply(message, history=None):
         return "Test response"
     monkeypatch.setattr(main, "generate_reply", fake_reply)
     with TestClient(app) as client:
@@ -82,6 +82,20 @@ def test_chat_saves_reply(monkeypatch):
 def test_blank_chat_is_rejected():
     with TestClient(app) as client:
         assert client.post("/api/chat", json={"message": "   "}).status_code == 422
+
+
+def test_llm_context_preserves_recent_turn_order():
+    from app.llm import _build_messages
+
+    history = [
+        {"user_message": "First question", "assistant_message": "First answer"},
+        {"user_message": "Second question", "assistant_message": "Second answer"},
+    ]
+    messages = _build_messages("Third question", history)
+    assert [item["role"] for item in messages] == ["system", "user", "assistant", "user", "assistant", "user"]
+    assert messages[1]["content"] == "First question"
+    assert messages[2]["content"] == "First answer"
+    assert messages[-1]["content"] == "Third question"
 
 
 def test_password_hashing():
