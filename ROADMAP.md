@@ -22,3 +22,10 @@ Profiles, posts, feed, messaging, groups, notifications, marketplace, business p
 Official OAuth/API integrations, background jobs, object storage, observability, rate limits, security review, deployment and store release.
 
 A milestone is complete only after implementation, automated tests, security checks and a real device/deployment check. This project integrates existing models; it does not train a frontier model from scratch. Do not expose the development API publicly without HTTPS, authentication, rate limiting and production hardening.
+
+
+## Master project governance
+
+The complete product scope, architecture, delivery phases, hardware constraints and definition of done are maintained in [PROJECT_MASTER_PLAN.md](PROJECT_MASTER_PLAN.md).
+
+Evidence-based module status and external blockers are tracked in [EXECUTION_REGISTER.md](EXECUTION_REGISTER.md). Keep both files updated as implementation advances; do not silently drop a requested module or mark unverified work complete.
