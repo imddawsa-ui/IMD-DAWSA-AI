@@ -130,6 +130,12 @@ footer{padding:0 20px 18px;color:#8195b3;font-size:11px}
 </div>
 <button id="create-listing" type="button">نشر العرض</button>
 <div id="market-status" class="note" aria-live="polite"></div>
+<hr>
+<strong>لوحة البائع</strong>
+<p class="note">تابع عروضك وعدد الاستفسارات، واعرض رسائل المشترين الخاصة بعروضك فقط.</p>
+<button id="refresh-seller-dashboard" type="button" class="secondary">تحديث لوحة البائع</button>
+<div id="seller-listings"></div>
+<div id="seller-enquiries"></div>
 </section>
 <p class="note">أدخل عنوان خادم IMD DAWSA AI الذي تديره. واجهة الويب لا تستضيف نموذج الذكاء الاصطناعي بنفسها. لا تستخدم خادماً عاماً غير موثوق، ولا تشارك رمز الوصول.</p>
 <section id="messages" aria-live="polite"><div class="msg assistant">مرحباً بك. اربط الواجهة بخادم IMD DAWSA AI الذي يعمل لديك، ثم ابدأ المحادثة.</div></section>
@@ -192,14 +198,41 @@ async function loadMarketplace(){
   const title=document.createElement('strong');title.textContent=listing.title;card.appendChild(title);
   const details=document.createElement('p');details.textContent=listing.description+' · '+listing.category+' · '+(listing.price_amount==null?'السعر عند التواصل':listing.price_amount+' '+listing.currency);card.appendChild(details);
   const seller=document.createElement('p');seller.className='social-meta';seller.textContent='البائع: '+listing.seller_name+' (@'+listing.seller_handle+')';card.appendChild(seller);
-  if(sessionToken){const form=document.createElement('form');form.className='social-actions';const input=document.createElement('input');input.maxLength=2000;input.required=true;input.placeholder='اسأل البائع عن العرض';const button=document.createElement('button');button.type='submit';button.textContent='إرسال استفسار';form.append(input,button);form.addEventListener('submit',async e=>{e.preventDefault();try{await socialRequest('/api/marketplace/listings/'+listing.id+'/enquiries',{method:'POST',body:JSON.stringify({message:input.value.trim()})});input.value='';$('#market-status').textContent='تم إرسال الاستفسار إلى البائع.'}catch(err){$('#market-status').textContent='تعذر الإرسال: '+err.message}});card.appendChild(form)}
+  if(sessionToken){const form=document.createElement('form');form.className='social-actions';const input=document.createElement('input');input.maxLength=2000;input.required=true;input.placeholder='اسأل البائع عن العرض';const button=document.createElement('button');button.type='submit';button.textContent='إرسال استفسار';form.append(input,button);form.addEventListener('submit',async e=>{e.preventDefault();try{await socialRequest('/api/marketplace/listings/'+listing.id+'/enquiries',{method:'POST',body:JSON.stringify({message:input.value.trim()})});input.value='';$('#market-status').textContent='تم إرسال الاستفسار إلى البائع.';loadSellerDashboard().catch(()=>{})}catch(err){$('#market-status').textContent='تعذر الإرسال: '+err.message}});card.appendChild(form)}
   root.appendChild(card);
  }
 }
+async function loadSellerDashboard(){
+ if(!sessionToken)throw new Error('سجّل الدخول لعرض لوحة البائع');
+ const [listings,enquiries]=await Promise.all([
+  socialRequest('/api/marketplace/my-listings'),
+  socialRequest('/api/marketplace/seller-enquiries')
+ ]);
+ const listingRoot=$('#seller-listings');listingRoot.replaceChildren();
+ const listingTitle=document.createElement('h4');listingTitle.textContent='عروضي';listingRoot.appendChild(listingTitle);
+ if(!listings.items.length){const empty=document.createElement('p');empty.className='note';empty.textContent='لم تنشر أي عروض بعد.';listingRoot.appendChild(empty)}
+ for(const item of listings.items){
+  const card=document.createElement('article');card.className='market-card';
+  const title=document.createElement('strong');title.textContent=item.title;card.appendChild(title);
+  const meta=document.createElement('p');meta.className='social-meta';meta.textContent='الحالة: '+item.status+' · الاستفسارات: '+item.enquiry_count;card.appendChild(meta);
+  listingRoot.appendChild(card);
+ }
+ const enquiryRoot=$('#seller-enquiries');enquiryRoot.replaceChildren();
+ const enquiryTitle=document.createElement('h4');enquiryTitle.textContent='استفسارات المشترين';enquiryRoot.appendChild(enquiryTitle);
+ if(!enquiries.items.length){const empty=document.createElement('p');empty.className='note';empty.textContent='لا توجد استفسارات لعروضك حالياً.';enquiryRoot.appendChild(empty)}
+ for(const item of enquiries.items){
+  const card=document.createElement('article');card.className='market-card';
+  const title=document.createElement('strong');title.textContent=item.listing_title;card.appendChild(title);
+  const buyer=document.createElement('p');buyer.className='social-meta';buyer.textContent='من: '+item.buyer_name+' (@'+item.buyer_handle+') · '+item.created_at;card.appendChild(buyer);
+  const message=document.createElement('p');message.textContent=item.message;card.appendChild(message);
+  enquiryRoot.appendChild(card);
+ }
+}
+$('#refresh-seller-dashboard').addEventListener('click',()=>loadSellerDashboard().catch(e=>$('#market-status').textContent='تعذر تحميل لوحة البائع: '+e.message));
 $('#market-search-button').addEventListener('click',()=>loadMarketplace().catch(e=>$('#market-status').textContent=e.message));
 $('#create-listing').addEventListener('click',async()=>{
  try{if(!sessionToken)throw new Error('سجّل الدخول أولاً');const price=$('#listing-price').value;const body={title:$('#listing-title').value.trim(),description:$('#listing-description').value.trim(),category:$('#listing-category').value.trim()||'general',currency:($('#listing-currency').value.trim()||'USD').toUpperCase()};if(price)body.price_amount=Number(price);
- const r=await socialRequest('/api/marketplace/listings',{method:'POST',body:JSON.stringify(body)});$('#market-status').textContent='تم نشر العرض رقم '+r.id;$('#listing-title').value='';$('#listing-description').value='';$('#listing-price').value='';await loadMarketplace()
+ const r=await socialRequest('/api/marketplace/listings',{method:'POST',body:JSON.stringify(body)});$('#market-status').textContent='تم نشر العرض رقم '+r.id;$('#listing-title').value='';$('#listing-description').value='';$('#listing-price').value='';await loadMarketplace();await loadSellerDashboard()
  }catch(e){$('#market-status').textContent='تعذر نشر العرض: '+e.message}
 });
 function add(text,kind='assistant'){const el=document.createElement('div');el.className='msg '+kind;el.textContent=text;messages.appendChild(el);messages.scrollTop=messages.scrollHeight}
