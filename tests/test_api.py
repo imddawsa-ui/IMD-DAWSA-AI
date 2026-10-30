@@ -258,6 +258,29 @@ def test_social_profile_posts_follow_likes_comments(monkeypatch, tmp_path):
         assert client.get(f"/api/social/users/{alice['id']}").json()["user"]["follower_count"] == 1
 
 
+def test_private_direct_messages_are_scoped_to_participants(monkeypatch, tmp_path):
+    sent = configure_email(monkeypatch)
+    monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "messages-test.sqlite3"))
+    with TestClient(app) as client:
+        alice_headers, alice = register_verified(client, sent, "dm-alice@example.com", "Alice")
+        bob_headers, bob = register_verified(client, sent, "dm-bob@example.com", "Bob")
+        stranger_headers, _ = register_verified(client, sent, "dm-stranger@example.com", "Stranger")
+        sent_message = client.post(
+            f"/api/social/messages/{bob['id']}", headers=alice_headers,
+            json={"content": "A private hello"},
+        )
+        assert sent_message.status_code == 201
+        thread = client.get(f"/api/social/messages/{alice['id']}", headers=bob_headers)
+        assert thread.status_code == 200
+        assert thread.json()["items"][0]["content"] == "A private hello"
+        assert client.get(f"/api/social/messages/{alice['id']}", headers=stranger_headers).json()["items"] == []
+        assert client.post(
+            f"/api/social/messages/{alice['id']}", headers=alice_headers,
+            json={"content": "self"},
+        ).status_code == 400
+        assert client.get(f"/api/social/messages/{alice['id']}").status_code == 401
+
+
 def test_security_headers_and_authenticated_chat_requirement(monkeypatch, tmp_path):
     monkeypatch.setattr(main.settings, "auth_secret_key", "test-secret-key-that-is-at-least-32-chars")
     monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "security-test.sqlite3"))
