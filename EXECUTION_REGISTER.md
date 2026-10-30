@@ -87,3 +87,28 @@ Never request passwords, one-time codes or private signing keys in chat. Use sec
 | Help center and customer support | PLANNED | Ticketing, escalation, dispute and abuse-report workflows |
 | Developer platform and extension SDK | PLANNED | API documentation, sandbox, scopes, webhooks and extension isolation |
 | Subscriptions and monetization | PLANNED | Payment-provider eligibility, billing, taxes and entitlement system |
+
+
+## Core intelligence and productivity execution register
+
+| Workstream | Status | Required next action / critical gate |
+|---|---|---|
+| Personal AI Agent | PLANNED | Implement planner/runtime, permissioned tools, approvals, audit, pause/cancel and sandbox |
+| Knowledge Hub | PLANNED | Build secure file ingestion, extraction, indexing, citations, versioning and sharing |
+| Universal Search | PLANNED | Implement multilingual index and enforce object-level authorization on every result |
+| Smart Recommendations | PLANNED | Build ranking pipeline, user controls, safety/fairness and privacy evaluations |
+| Digital Wallet | BLOCKED | Select eligible regulated provider; complete jurisdiction, KYC/AML, legal and security review |
+| Customer CRM | PLANNED | Implement contacts, leads, pipelines, reminders, team roles and audit |
+| Project Management | PLANNED | Implement workspaces, tasks, dependencies, calendar, notifications and collaboration |
+| Cloud Workspace | PLANNED | Select storage backend; implement permissions, versioning, sync, encryption and restore |
+| API & Plugin Store | PLANNED | Define API/SDK, plugin manifest, scope approvals, sandbox, review and revocation |
+| AI Evaluation Center | PLANNED | Create benchmark datasets, model comparison harness, safety and regression gates |
+
+### Cross-module acceptance gates
+- [ ] Agent actions cannot bypass the user's resource permissions.
+- [ ] Search never reveals inaccessible files, private messages or restricted records.
+- [ ] Recommendation controls and opt-out are functional.
+- [ ] Wallet actions require separate explicit authorization and provider confirmation.
+- [ ] Cloud sync handles offline edits and conflicts without silent data loss.
+- [ ] Plugins are sandboxed, least-privilege and revocable.
+- [ ] AI evaluations are reproducible and include Arabic/multilingual and safety cases.
