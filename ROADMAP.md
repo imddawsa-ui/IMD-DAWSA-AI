@@ -29,3 +29,19 @@ A milestone is complete only after implementation, automated tests, security che
 The complete product scope, architecture, delivery phases, hardware constraints and definition of done are maintained in [PROJECT_MASTER_PLAN.md](PROJECT_MASTER_PLAN.md).
 
 Evidence-based module status and external blockers are tracked in [EXECUTION_REGISTER.md](EXECUTION_REGISTER.md). Keep both files updated as implementation advances; do not silently drop a requested module or mark unverified work complete.
+
+
+## 0.8 NILE ONE operational safety foundation
+- Add platform expansion scope from [NILE_PLATFORM_EXPANSION.md](NILE_PLATFORM_EXPANSION.md).
+- Implement resource diagnostics, secret-safe observability, security controls, privacy contracts, human approvals and verified backup/restore.
+- Exit criteria: tests pass; diagnostics disclose no secrets; backup restore drill succeeds; operational evidence is recorded.
+
+## 0.9 NILE ONE AI execution foundation
+- Capability-aware model registry and routing, multimodal adapters, durable workflow jobs and sandboxed autonomous development.
+- Exit criteria: provider capability checks, permission enforcement, retry/cancel behavior, approval gates and reproducible evaluations pass.
+
+## 1.0 NILE ONE ecosystem
+- Versioned API gateway, developer documentation, signed and permissioned plugin/model catalogue, complete localization/accessibility and operational dashboards.
+- Exit criteria: plugin isolation/revocation, API scopes/quotas, locale and accessibility checks, security review and deployment verification pass.
+
+These milestones extend the existing master plan; they do not imply that any newly scoped capability is already implemented.
