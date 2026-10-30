@@ -164,6 +164,20 @@ def initialize():
         """)
         db.execute("CREATE INDEX IF NOT EXISTS idx_marketplace_active ON marketplace_listings(status, id DESC)")
         db.execute("CREATE INDEX IF NOT EXISTS idx_marketplace_seller ON marketplace_listings(seller_id, id DESC)")
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS notifications (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                actor_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+                kind TEXT NOT NULL,
+                object_type TEXT,
+                object_id INTEGER,
+                message TEXT NOT NULL,
+                read_at TEXT,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        db.execute("CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(user_id, id DESC)")
 
 
 def create_user(email: str, password_hash: str, display_name: str):
