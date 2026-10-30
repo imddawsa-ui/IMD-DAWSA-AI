@@ -16,6 +16,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -50,6 +51,9 @@ private fun NileOneApp() {
         )
     }
     var languageMenuOpen by remember { mutableStateOf(false) }
+    val themeOptions = listOf("aurora" to "Aurora Dark", "light" to "Studio Light", "purple" to "Nebula Purple", "emerald" to "Emerald Focus")
+    var themeName by remember { mutableStateOf(preferences.getString("preferred_theme", "aurora") ?: "aurora") }
+    var themeMenuOpen by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var displayName by remember { mutableStateOf("") }
@@ -98,7 +102,13 @@ private fun NileOneApp() {
         }
     }
 
-    MaterialTheme {
+    val appColorScheme = when (themeName) {
+        "light" -> lightColorScheme(primary = Color(0xFF315B8A), secondary = Color(0xFF557A70), background = Color(0xFFF4F6FA), surface = Color(0xFFFFFFFF))
+        "purple" -> darkColorScheme(primary = Color(0xFFC5A3FF), secondary = Color(0xFF8DCEFF), background = Color(0xFF171326), surface = Color(0xFF241D38))
+        "emerald" -> darkColorScheme(primary = Color(0xFF76D7B0), secondary = Color(0xFFA9D8C4), background = Color(0xFF101E1A), surface = Color(0xFF1A2D26))
+        else -> darkColorScheme(primary = Color(0xFF8CCBFF), secondary = Color(0xFFB6C8FF), background = Color(0xFF101923), surface = Color(0xFF1A2937))
+    }
+    MaterialTheme(colorScheme = appColorScheme) {
         Scaffold(topBar = { TopAppBar(title = { Text("NILE ONE HUMAN") }, actions = { Text(if (token.isBlank()) "زائر" else "متصل", modifier = Modifier.padding(end = 16.dp)) }) },
             bottomBar = {
                 NavigationBar {
@@ -119,6 +129,13 @@ private fun NileOneApp() {
                         OutlinedButton(onClick = { languageMenuOpen = true }) { Text(languageOptions.firstOrNull { it.first == languageCode }?.second ?: languageCode) }
                         DropdownMenu(expanded = languageMenuOpen, onDismissRequest = { languageMenuOpen = false }) {
                             languageOptions.forEach { option -> DropdownMenuItem(text = { Text(option.second) }, onClick = { languageCode = option.first; preferences.edit().putString("preferred_language", option.first).apply(); languageMenuOpen = false; generalStatus = "تم حفظ اللغة: " + option.second + ". ترجمة الردود تتطلب إعداد محرك ترجمة على الخادم." }) }
+                        }
+                    }
+                    Spacer(Modifier.width(4.dp))
+                    Box {
+                        OutlinedButton(onClick = { themeMenuOpen = true }) { Text("Theme") }
+                        DropdownMenu(expanded = themeMenuOpen, onDismissRequest = { themeMenuOpen = false }) {
+                            themeOptions.forEach { option -> DropdownMenuItem(text = { Text(option.second) }, onClick = { themeName = option.first; preferences.edit().putString("preferred_theme", option.first).apply(); themeMenuOpen = false }) }
                         }
                     }
                 }
