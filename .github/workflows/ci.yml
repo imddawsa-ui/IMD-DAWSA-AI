@@ -19,6 +19,35 @@ jobs:
       - run: python -m compileall -q app tests
       - run: pytest -q
 
+  web-client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Validate PWA manifest
+        run: python -c "import json,pathlib; json.loads(pathlib.Path('web/manifest.webmanifest').read_text(encoding='utf-8'))"
+      - name: Validate service worker JavaScript
+        run: node --check web/sw.js
+      - name: Validate inline Web application JavaScript
+        run: python - <<'PY'
+          import pathlib, re, subprocess, sys
+          html = pathlib.Path('web/index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\\s[^>]*)?>([\\s\\S]*?)</script>', html, re.I)
+          if not scripts:
+              raise SystemExit('No inline application script found')
+          for index, script in enumerate(scripts):
+              path = pathlib.Path(f'/tmp/imd-web-inline-{index}.js')
+              path.write_text(script, encoding='utf-8')
+              subprocess.run(['node', '--check', str(path)], check=True)
+          required = ['manifest.webmanifest', 'sw.js', 'icon.svg']
+          missing = [name for name in required if not (pathlib.Path('web') / name).is_file()]
+          if missing:
+              raise SystemExit('Missing Web assets: ' + ', '.join(missing))
+          print(f'Validated {len(scripts)} inline script(s) and {len(required)} required assets')
+        PY
+
   android-apk:
     runs-on: ubuntu-latest
     steps:
