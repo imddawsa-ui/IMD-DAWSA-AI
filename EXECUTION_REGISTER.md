@@ -431,7 +431,7 @@ Detailed consolidation and acceptance criteria: [NILE_PLATFORM_EXPANSION.md](NIL
 | Workstream | Status | Implementation boundary / next action |
 |---|---|---|
 | NILE CYBER DEFENSE | PLANNED | Defensive security checks, dependency/secret scanning, abuse signals and incident response; add CI security gates. |
-| NILE OBSERVABILITY | IN_PROGRESS | Request IDs and safe response headers exist; add structured logs, metrics, traces, dashboards and alerting. |
+| NILE OBSERVABILITY | IN_PROGRESS | Request IDs, safe response headers and authenticated host diagnostics exist; structured logs, metrics, traces, dashboards and alerting remain. |
 | NILE BACKUP & RECOVERY | PLANNED | Define encrypted backup, retention, integrity and restore drill; no reliability claim before restore test. |
 | NILE AUTONOMOUS DEVELOPER | PLANNED | Build sandboxed code proposals, diff approval and reproducible test execution. |
 | NILE MULTIMODAL STUDIO | PLANNED | Capability-gated text/image/audio/video/document adapters; actual providers and hardware required. |
@@ -440,7 +440,7 @@ Detailed consolidation and acceptance criteria: [NILE_PLATFORM_EXPANSION.md](NIL
 | NILE MODEL & PLUGIN MARKETPLACE | PLANNED | Signed manifests, permission review, isolation, compatibility and revocation. |
 | NILE PRIVACY CENTER | PLANNED | Consent, retention, export/deletion and connected-app permission controls. |
 | NILE API GATEWAY | PLANNED | Versioned contracts, scopes, quotas and integration boundaries. |
-| NILE RESOURCE MANAGER | PLANNED | Cross-platform CPU/RAM/disk diagnostics and low-resource safeguards; baseline is Windows 11, 8 GB, CPU-only. |
+| NILE RESOURCE MANAGER | IN_PROGRESS | Added dependency-free host resource snapshot and authenticated `/api/system/resources`; tests added but CI pending. Low-resource safeguards and device validation remain. |
 | NILE HUMAN APPROVAL | PLANNED | Approval gates for publishing, messages, destructive operations, payments and privileged agent actions. |
 
 ### Consolidation rules
@@ -462,6 +462,7 @@ No row above is marked TESTED or VERIFIED until code, tests and the correspondin
 
 ## Updated execution notes — 2026-10-30
 - Added the consolidated expansion specification in NILE_PLATFORM_EXPANSION.md.
+- Implemented `app/diagnostics.py` with dependency-free CPU/RAM/disk resource snapshots and an authenticated `/api/system/resources` endpoint. Added access-control and secret-safe response tests; CI result is pending.
 - The new scope is approved and documented; implementation remains PLANNED unless explicitly stated otherwise in the table above.
 - Existing translation endpoints require a configured LibreTranslate-compatible provider; automatic global translation is not yet active.
 - Existing CI validates backend, Web and Android debug build, but a green debug build is not a signed production release or physical-device verification.
