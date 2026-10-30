@@ -361,6 +361,50 @@ def test_marketplace_seller_dashboard_is_scoped_to_own_listings(monkeypatch, tmp
         assert client.get("/api/marketplace/seller-enquiries").status_code == 401
 
 
+def test_notifications_cover_social_marketplace_and_enforce_owner_scope(monkeypatch, tmp_path):
+    sent = configure_email(monkeypatch)
+    monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "notifications-test.sqlite3"))
+    with TestClient(app) as client:
+        alice_headers, alice = register_verified(client, sent, "notify-alice@example.com", "Alice")
+        bob_headers, bob = register_verified(client, sent, "notify-bob@example.com", "Bob")
+        stranger_headers, _ = register_verified(client, sent, "notify-stranger@example.com", "Stranger")
+
+        post = client.post("/api/social/posts", headers=bob_headers, json={
+            "content": "A public update", "visibility": "public"
+        }).json()
+        assert client.post(f"/api/social/users/{bob['id']}/follow", headers=alice_headers).status_code == 200
+        assert client.post(f"/api/social/posts/{post['id']}/like", headers=alice_headers).json()["liked"] is True
+        assert client.post(f"/api/social/posts/{post['id']}/comments", headers=alice_headers, json={
+            "content": "Nice update"
+        }).status_code == 201
+        assert client.post(f"/api/social/messages/{bob['id']}", headers=alice_headers, json={
+            "content": "Hello Bob"
+        }).status_code == 201
+
+        listing = client.post("/api/marketplace/listings", headers=bob_headers, json={
+            "title": "Bob's service", "description": "Available now", "category": "services"
+        }).json()
+        assert client.post(f"/api/marketplace/listings/{listing['id']}/enquiries", headers=alice_headers, json={
+            "message": "Please share more details"
+        }).status_code == 201
+
+        notifications = client.get("/api/notifications", headers=bob_headers)
+        assert notifications.status_code == 200
+        items = notifications.json()["items"]
+        assert {item["kind"] for item in items} == {
+            "follow", "like", "comment", "message", "marketplace_enquiry"
+        }
+        first_id = items[0]["id"]
+        assert client.post(f"/api/notifications/{first_id}/read", headers=stranger_headers).status_code == 404
+        assert client.post(f"/api/notifications/{first_id}/read", headers=bob_headers).json()["updated"] is True
+        refreshed = client.get("/api/notifications", headers=bob_headers).json()["items"]
+        assert next(item for item in refreshed if item["id"] == first_id)["read_at"] is not None
+        assert client.post("/api/notifications/read-all", headers=bob_headers).status_code == 200
+        assert all(item["read_at"] is not None for item in client.get("/api/notifications", headers=bob_headers).json()["items"])
+        assert client.get("/api/notifications", headers=alice_headers).json()["items"] == []
+        assert client.get("/api/notifications").status_code == 401
+
+
 def test_private_direct_messages_are_scoped_to_participants(monkeypatch, tmp_path):
     sent = configure_email(monkeypatch)
     monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "messages-test.sqlite3"))
