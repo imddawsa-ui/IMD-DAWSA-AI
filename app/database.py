@@ -50,12 +50,24 @@ def initialize():
             db.execute("ALTER TABLE users ADD COLUMN totp_secret_enc TEXT")
         if "totp_enabled" not in user_columns:
             db.execute("ALTER TABLE users ADD COLUMN totp_enabled INTEGER NOT NULL DEFAULT 0")
+        if "totp_last_counter" not in user_columns:
+            db.execute("ALTER TABLE users ADD COLUMN totp_last_counter INTEGER NOT NULL DEFAULT 0")
         db.execute("""
             CREATE TABLE IF NOT EXISTS email_verification_tokens (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
                 token_hash TEXT NOT NULL UNIQUE,
                 expires_at INTEGER NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS two_factor_challenges (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                nonce_hash TEXT NOT NULL UNIQUE,
+                expires_at INTEGER NOT NULL,
+                used_at TEXT,
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         """)
