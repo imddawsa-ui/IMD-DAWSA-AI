@@ -516,3 +516,44 @@ def test_resource_snapshot_reports_only_host_capabilities(tmp_path):
     assert "private.sqlite3" not in str(snapshot)
     assert "AUTH_SECRET_KEY" not in str(snapshot)
     assert "username" not in snapshot
+
+
+def test_encrypted_database_backup_verify_and_restore(tmp_path):
+    import sqlite3
+    from cryptography.fernet import Fernet
+    from app.backup import create_encrypted_backup, verify_encrypted_backup, restore_encrypted_backup
+
+    source = tmp_path / "source.sqlite"
+    backup = tmp_path / "backup.enc"
+    restored = tmp_path / "restored.sqlite"
+    with sqlite3.connect(source) as db:
+        db.execute("CREATE TABLE records (value TEXT NOT NULL)")
+        db.execute("INSERT INTO records VALUES ('private-data')")
+    key = Fernet.generate_key()
+    create_encrypted_backup(source, backup, key)
+    assert verify_encrypted_backup(backup, key) is True
+    assert b"private-data" not in backup.read_bytes()
+    restore_encrypted_backup(backup, restored, key)
+    with sqlite3.connect(restored) as db:
+        assert db.execute("SELECT value FROM records").fetchone()[0] == "private-data"
+
+
+def test_restore_refuses_to_overwrite_without_explicit_force(tmp_path):
+    import sqlite3
+    import pytest
+    from cryptography.fernet import Fernet
+    from app.backup import BackupError, create_encrypted_backup, restore_encrypted_backup
+
+    source = tmp_path / "source.sqlite"
+    target = tmp_path / "target.sqlite"
+    backup = tmp_path / "backup.enc"
+    with sqlite3.connect(source) as db:
+        db.execute("CREATE TABLE records (value TEXT)")
+    with sqlite3.connect(target) as db:
+        db.execute("CREATE TABLE existing (value TEXT)")
+    key = Fernet.generate_key()
+    create_encrypted_backup(source, backup, key)
+    with pytest.raises(BackupError):
+        restore_encrypted_backup(backup, target, key)
+    with sqlite3.connect(target) as db:
+        assert db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='existing'").fetchone()
