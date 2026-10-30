@@ -1,4 +1,4 @@
-name: IMD DAWSA AI Android and backend checks
+name: IMD DAWSA AI Web, Android and backend checks
 
 on:
   push:
@@ -31,10 +31,11 @@ jobs:
       - name: Validate service worker JavaScript
         run: node --check web/sw.js
       - name: Validate inline Web application JavaScript
-        run: python - <<'PY'
-          import pathlib, re, subprocess, sys
+        run: |
+          python - <<'PY'
+          import pathlib, re, subprocess
           html = pathlib.Path('web/index.html').read_text(encoding='utf-8')
-          scripts = re.findall(r'<script(?:\\s[^>]*)?>([\\s\\S]*?)</script>', html, re.I)
+          scripts = re.findall(r'<script(?:\s[^>]*)?>([\s\S]*?)</script>', html, re.I)
           if not scripts:
               raise SystemExit('No inline application script found')
           for index, script in enumerate(scripts):
@@ -46,7 +47,7 @@ jobs:
           if missing:
               raise SystemExit('Missing Web assets: ' + ', '.join(missing))
           print(f'Validated {len(scripts)} inline script(s) and {len(required)} required assets')
-        PY
+          PY
 
   android-apk:
     runs-on: ubuntu-latest
@@ -62,7 +63,7 @@ jobs:
         run: gradle assembleDebug --no-daemon
       - name: Verify APK exists
         run: test -s android/app/build/outputs/apk/debug/app-debug.apk
-      - name: Upload installable Android APK
+      - name: Upload installable Android debug APK
         uses: actions/upload-artifact@v4
         with:
           name: imd-dawsa-ai-android-debug-apk
