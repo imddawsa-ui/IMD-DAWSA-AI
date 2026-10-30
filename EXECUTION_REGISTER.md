@@ -422,3 +422,46 @@ This audit records live connector checks performed after the latest source commi
 - CI run `41109413646` currently reports the engineering-quality and web-client jobs successful; backend and Android jobs were still running at the time of this entry.
 - The separate GitHub Pages deployment workflow has reported failures on recent pushes. The presence of a Pages project is not evidence of a successful published site. Deployment remains unverified until a deployment run succeeds and the public URL is smoke-tested.
 - Visual assets are original vector artwork. The generated promotional collage is a concept reference, not a claim that all pictured product modules exist.
+
+
+## NILE ONE platform expansion — approved scope, 2026-10-30
+
+Detailed consolidation and acceptance criteria: [NILE_PLATFORM_EXPANSION.md](NILE_PLATFORM_EXPANSION.md).
+
+| Workstream | Status | Implementation boundary / next action |
+|---|---|---|
+| NILE CYBER DEFENSE | PLANNED | Defensive security checks, dependency/secret scanning, abuse signals and incident response; add CI security gates. |
+| NILE OBSERVABILITY | IN_PROGRESS | Request IDs and safe response headers exist; add structured logs, metrics, traces, dashboards and alerting. |
+| NILE BACKUP & RECOVERY | PLANNED | Define encrypted backup, retention, integrity and restore drill; no reliability claim before restore test. |
+| NILE AUTONOMOUS DEVELOPER | PLANNED | Build sandboxed code proposals, diff approval and reproducible test execution. |
+| NILE MULTIMODAL STUDIO | PLANNED | Capability-gated text/image/audio/video/document adapters; actual providers and hardware required. |
+| NILE WORKFLOW AUTOMATION | PLANNED | Durable jobs, idempotency, retries, cancellation, schedules and approvals. |
+| NILE UNIVERSAL ACCESS | IN_PROGRESS | Web has theme and partial locale controls; migrate UI strings to locale resources and test accessibility/RTL. |
+| NILE MODEL & PLUGIN MARKETPLACE | PLANNED | Signed manifests, permission review, isolation, compatibility and revocation. |
+| NILE PRIVACY CENTER | PLANNED | Consent, retention, export/deletion and connected-app permission controls. |
+| NILE API GATEWAY | PLANNED | Versioned contracts, scopes, quotas and integration boundaries. |
+| NILE RESOURCE MANAGER | PLANNED | Cross-platform CPU/RAM/disk diagnostics and low-resource safeguards; baseline is Windows 11, 8 GB, CPU-only. |
+| NILE HUMAN APPROVAL | PLANNED | Approval gates for publishing, messages, destructive operations, payments and privileged agent actions. |
+
+### Consolidation rules
+- Cyber Defense belongs to Security Center and Trust & Safety.
+- Observability, Resource Manager and Backup/Recovery belong to Platform Operations and Data Platform.
+- Autonomous Developer, Workflow Automation and Human Approval extend AI Assistant and Agent Engine.
+- Multimodal Studio extends Model Intelligence.
+- Universal Access extends the shared Design System and Localization.
+- Model/Plugin Marketplace extends Tool Engine and Connect Hub.
+- Privacy Center extends Identity and Trust.
+- API Gateway extends NILE CORE.
+
+### Mandatory execution order
+1. Operational safety: observability, resource controls, security gates, backup/restore, privacy and approval contracts.
+2. AI execution: model capability registry, multimodal adapters, durable workflows and sandboxed developer.
+3. Ecosystem: API gateway, signed plugin catalogue, accessibility/localization and dashboards.
+
+No row above is marked TESTED or VERIFIED until code, tests and the corresponding real integration/device/restore/deployment evidence exist.
+
+## Updated execution notes — 2026-10-30
+- Added the consolidated expansion specification in NILE_PLATFORM_EXPANSION.md.
+- The new scope is approved and documented; implementation remains PLANNED unless explicitly stated otherwise in the table above.
+- Existing translation endpoints require a configured LibreTranslate-compatible provider; automatic global translation is not yet active.
+- Existing CI validates backend, Web and Android debug build, but a green debug build is not a signed production release or physical-device verification.
