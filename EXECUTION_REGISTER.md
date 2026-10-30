@@ -218,3 +218,10 @@ GitHub Actions run [41012771718](https://github.com/imddawsa-ui/IMD-DAWSA-AI/act
 - Android: **PASS** — Gradle debug APK build completed successfully after resolving the debug/release manifest merge conflict.
 
 Therefore, at this commit the following slices are now **TESTED** by CI: bounded multi-turn chat context, marketplace seller listing/enquiry API ownership isolation, Android password masking, Android debug/release cleartext manifest configuration, and Web seller dashboard JavaScript parsing. This does not establish physical-device behavior, release signing, production hosting, or external service integration.
+
+## Social discovery implementation — 2026-10-30
+
+- Added `GET /api/social/users?q=...` to discover verified accounts by display name or handle. Searches require at least two characters, cap result count, exclude the current account, and return a typed follow-state value.
+- Added a Web people-discovery panel with follow/unfollow controls.
+- Automated test verifies short-query rejection, exclusion of unverified users and the current account, and follow-state changes.
+- In GitHub Actions run `41013012564`, the Python job completed successfully with **19 tests passed** and the Web client job completed successfully. The Android job was still running at the time this note was written; no full-workflow success is claimed for this run.
