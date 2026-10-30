@@ -1,6 +1,8 @@
 import re
 import secrets
 import sqlite3
+import time
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -37,6 +39,60 @@ app.add_middleware(
     allow_headers=["Content-Type", "X-API-Token", "Authorization"],
 )
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
+
+# Lightweight per-process abuse controls. Use a shared gateway limiter for multi-worker production.
+_rate_buckets = defaultdict(deque)
+_RATE_POLICIES = {
+    "/api/auth/login": (10, 60),
+    "/api/auth/register": (5, 60),
+    "/api/chat": (30, 60),
+}
+
+
+@app.middleware("http")
+async def security_middleware(request, call_next):
+    path = request.url.path
+    policy = _RATE_POLICIES.get(path) if request.method == "POST" else None
+    if policy:
+        limit, window = policy
+        client_ip = request.client.host if request.client else "unknown"
+        key = (client_ip, path)
+        now = time.monotonic()
+        bucket = _rate_buckets[key]
+        while bucket and now - bucket[0] >= window:
+            bucket.popleft()
+        if len(bucket) >= limit:
+            from fastapi.responses import JSONResponse
+            return JSONResponse(status_code=429, content={"detail": "Too many requests. Please try again later."},
+                                headers={"Retry-After": str(window)})
+        bucket.append(now)
+
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Cross-Origin-Resource-Policy"] = "same-origin"
+    if request.url.scheme == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
+def can_view_post(db, post, viewer_id):
+    if not post:
+        return False
+    if post["visibility"] == "public":
+        return True
+    if viewer_id is None:
+        return False
+    if post["user_id"] == viewer_id:
+        return True
+    if post["visibility"] == "followers":
+        return bool(db.execute(
+            "SELECT 1 FROM follows WHERE follower_id = ? AND following_id = ?",
+            (viewer_id, post["user_id"]),
+        ).fetchone())
+    return False
 
 
 class ChatRequest(BaseModel):
@@ -314,7 +370,10 @@ async def add_post_comment(
     if not content:
         raise HTTPException(status_code=422, detail="Comment cannot be blank")
     with connect() as db:
-        if not db.execute("SELECT 1 FROM posts WHERE id = ?", (post_id,)).fetchone():
+        post = db.execute("SELECT id, user_id, visibility FROM posts WHERE id = ?", (post_id,)).fetchone()
+        if not post:
+            raise HTTPException(status_code=404, detail="Post not found")
+        if not can_view_post(db, post, user["id"]):
             raise HTTPException(status_code=404, detail="Post not found")
         cursor = db.execute(
             "INSERT INTO post_comments (post_id, user_id, content) VALUES (?, ?, ?)",
@@ -325,9 +384,13 @@ async def add_post_comment(
 
 
 @app.get("/api/social/posts/{post_id}/comments")
-async def list_post_comments(post_id: int, limit: int = 50):
+async def list_post_comments(
+    post_id: int, limit: int = 50, authorization: str | None = Header(default=None)
+):
+    user = current_user(authorization)
     with connect() as db:
-        if not db.execute("SELECT 1 FROM posts WHERE id = ?", (post_id,)).fetchone():
+        post = db.execute("SELECT id, user_id, visibility FROM posts WHERE id = ?", (post_id,)).fetchone()
+        if not post or not can_view_post(db, post, user["id"] if user else None):
             raise HTTPException(status_code=404, detail="Post not found")
         rows = db.execute("""
             SELECT c.id, c.content, c.created_at, u.id AS author_id, u.display_name, u.handle
@@ -345,6 +408,8 @@ async def chat(
 ):
     check_access(x_api_token)
     user = current_user(authorization)
+    if len(settings.auth_secret_key) >= 32 and not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
     message = request.message.strip()
     if not message:
         raise HTTPException(status_code=422, detail="Message cannot be blank")
@@ -370,6 +435,8 @@ async def conversations(
 ):
     check_access(x_api_token)
     user = current_user(authorization)
+    if len(settings.auth_secret_key) >= 32 and not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
     return {"items": list_conversations(max(1, min(limit, 100)), user["id"] if user else None)}
 
 
@@ -380,5 +447,7 @@ async def delete_conversations(
 ):
     check_access(x_api_token)
     user = current_user(authorization)
+    if len(settings.auth_secret_key) >= 32 and not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
     clear_conversations(user["id"] if user else None)
     return {"deleted": True}
