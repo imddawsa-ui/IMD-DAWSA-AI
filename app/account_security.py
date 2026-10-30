@@ -33,7 +33,7 @@ def create_verification_token(user_id: int) -> str:
         db.execute("DELETE FROM email_verification_tokens WHERE user_id = ?", (user_id,))
         db.execute(
             "INSERT INTO email_verification_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)",
-            (_digest(token), user_id, int(time.time()) + settings.email_verification_ttl_seconds),
+            (user_id, _digest(token), int(time.time()) + settings.email_verification_ttl_seconds),
         )
     return token
 
@@ -217,15 +217,15 @@ def verify_recovery_code(user_id: int, code: str) -> bool:
 async def verification_confirmation(token: str):
     if not token or len(token) > 200:
         raise HTTPException(status_code=400, detail="Invalid verification link")
-    safe_token = escape(token, quote=True)
     return HTMLResponse(
         "<!doctype html><html><head><meta name='viewport' content='width=device-width,initial-scale=1'>"
         "<title>Verify IMD DAWSA AI email</title></head><body>"
         "<h2>Verify your email</h2><p>Press the button to confirm your email address.</p>"
-        f"<button id='verify'>Verify email</button><p id='result'></p>"
+        "<button id='verify'>Verify email</button><p id='result'></p>"
         "<script>document.getElementById('verify').onclick=async()=>{"
+        "const token=new URLSearchParams(location.search).get('token');"
         "const r=await fetch('/api/auth/verify-email',{method:'POST',headers:{'Content-Type':'application/json'},"
-        f"body:JSON.stringify({{token:'{safe_token}'}})}});"
+        "body:JSON.stringify({token})});"
         "document.getElementById('result').textContent=r.ok?'Email verified. You can now sign in.':'Link invalid or expired.';"
         "};</script></body></html>"
     )
