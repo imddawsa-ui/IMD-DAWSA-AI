@@ -16,7 +16,7 @@ This file is the source of truth for delivery status. Update it whenever a featu
 |---|---|---|---|
 | FastAPI service foundation | IMPLEMENTED | Basic service exists | Expand API contracts, validation and tests |
 | Local Ollama chat | IMPLEMENTED | Local provider configured; hardware performance not benchmarked | Add provider health, model lifecycle and offline test |
-| SQLite conversation storage | IMPLEMENTED | Basic persistence exists | Add migrations, data isolation and privacy controls |
+| SQLite conversation storage | IN_PROGRESS | Additive user_id migration and user-scoped reads/writes implemented; CI validation pending | Add migration framework, export and deletion controls |
 | Basic Web chat UI | IMPLEMENTED | Early interface only | Build responsive product shell and accessibility |
 | Windows setup scripts | IMPLEMENTED | Batch setup/start/model scripts exist | Add desktop shell, diagnostics and packaging |
 | Windows Master Studio | PLANNED | No full desktop control application yet | Design and implement project dashboard |
@@ -24,7 +24,7 @@ This file is the source of truth for delivery status. Update it whenever a featu
 | Android on-device offline AI | PLANNED | Not implemented | Select mobile runtime and test on target phones |
 | CI Python tests | TESTED | Latest recorded run passed at commit 298b8ca8d099a8953a6b2fd974cbc15ca1ddd21c | Expand coverage |
 | CI Android debug build | TESTED | Latest recorded workflow run completed successfully | Add emulator/device smoke tests |
-| Production identity and accounts | PLANNED | No full account/session system | Design secure identity and authorization |
+| Email/password account API | IMPLEMENTED | Registration, login, PBKDF2 password hashes, signed expiring bearer tokens and /me endpoint committed; CI validation pending | Add email verification, recovery, refresh rotation, MFA and abuse controls |
 | Social network | PLANNED | Not implemented | Build profiles and posts after identity foundation |
 | Messaging and communities | PLANNED | Not implemented | Build real-time conversations and groups |
 | Marketplace and business tools | PLANNED | Not implemented | Define listings, enquiries and order workflows |
@@ -112,3 +112,15 @@ Never request passwords, one-time codes or private signing keys in chat. Use sec
 - [ ] Cloud sync handles offline edits and conflicts without silent data loss.
 - [ ] Plugins are sandboxed, least-privilege and revocable.
 - [ ] AI evaluations are reproducible and include Arabic/multilingual and safety cases.
+
+
+## Execution update — 2026-10-30
+
+| Workstream | Status | Evidence / boundary |
+|---|---|---|
+| Email/password registration and login API | IMPLEMENTED | `app/auth.py`, `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`; PBKDF2-HMAC-SHA256 password hashes and HMAC-signed expiring bearer tokens |
+| Authenticated conversation ownership | IMPLEMENTED | Additive SQLite `user_id` migration; authenticated history and deletion are scoped to the signed-in user |
+| Account integration tests | IN_PROGRESS | Added password, token, registration, login, duplicate-email and user-isolation tests; latest CI run must pass before TESTED status |
+| Email verification, password recovery, OAuth, MFA and refresh-token rotation | PLANNED | Requires mail/SMS delivery, OAuth applications and additional session/security work |
+| Social profiles, posts, follows, reactions and comments | PLANNED | Next implementation after identity tests are green |
+| Production readiness | BLOCKED | Requires HTTPS hosting, secret configuration, rate limiting, email verification and security review |
