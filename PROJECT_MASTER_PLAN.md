@@ -346,26 +346,35 @@ These modules extend the initial scope so the platform can grow into a broad sup
 - Plugins receive minimum scopes and can be disconnected/revoked by the user.
 
 
-## 15. Android-only delivery decision — 2026-10-30
+## 15. Approved delivery decision — Web + Android, zero-dollar budget (2026-10-30)
 
-The user has explicitly selected **Android only** as the end-user product. This decision supersedes the earlier multi-client delivery target for the first release.
+This section supersedes the earlier Android-only decision in this document and any conflicting first-release scope statements.
 
-### Delivery scope
-- Primary and only end-user client for this release: native Android application (Kotlin + Jetpack Compose).
-- Do not build or maintain a separate user-facing Web, PWA or Windows desktop client as a release requirement.
-- Keep the backend/API and operational cloud services as infrastructure required by Android; they are not separate client deliverables.
-- Preserve the existing Windows/Ollama developer scripts only as an optional local AI server/development environment. The Android app is not yet a fully offline on-device model runtime.
-- The Android app must provide the platform modules through one consistent navigation and permission model. Each module is only called complete after its API, UI, validation, error/loading/empty states, tests and security checks work together.
+### Owner-approved delivery scope
+- Budget: **USD 0**. Use free and open-source tools/services only. Do not create paid subscriptions, enable paid APIs, purchase domains, or incur usage charges.
+- End-user clients: **responsive Web/PWA and native Android**. Both are first-release deliverables.
+- Product scope: preserve all NILE ONE HUMAN modules defined in this master plan; deliver them in dependency-ordered phases and keep unimplemented modules visibly PLANNED or BLOCKED.
+- Windows 11 / Ollama scripts remain an optional local development/AI-host environment, not a separate end-user client deliverable.
+- The backend and operational services are shared infrastructure for Web and Android.
+- Prefer local-first execution and free-tier hosting only where provider terms permit the intended use. No paid cloud AI API is required.
 
-### Android release gates
-- Complete navigation and implement real UI/API integration for AI chat, identity/security, social, messaging, marketplace, notifications, services, forex education/market analysis/paper trading, mini-app catalogue, workspace and administration.
-- Use Android Keystore-backed token/session protection, safe HTTPS production configuration, password masking, logout/session lifecycle and clear permission prompts.
-- Support Arabic RTL and English LTR, accessible layouts, low-memory devices and intermittent connectivity.
-- Add offline queue/cache where safe; do not claim offline AI unless a local Android inference runtime and model are actually integrated and tested on target hardware.
-- Build debug APK automatically in CI; signed release APK/AAB requires protected signing secrets and owner-controlled release authorization.
-- Test install, upgrade, login, chat, social, messaging, marketplace and failure recovery on a physical Android phone before production release.
+### Zero-cost architecture and limitations
+- Web client: static Web/PWA build. GitHub Pages may be used for public documentation or a non-commercial static preview subject to GitHub Pages terms; it is not a backend, private transaction host or general-purpose free SaaS host.
+- Backend: local FastAPI/Ollama is the zero-cost reference environment. A continuously available public backend requires a suitable free service tier or owner-operated machine; free tiers have quotas and may sleep or change.
+- Data: SQLite for local/single-instance development. Cloudflare D1/Workers/Pages resources already exist in the connected account, but the Worker is only a health/readiness shell and Pages has no deployment; neither is treated as a production-ready app backend.
+- Android: native Kotlin/Compose client; public GitHub Actions can build a debug APK and upload a temporary artifact. Release signing keys remain owner-controlled and private.
+- AI: local Ollama models sized for the actual hardware. An 8 GB RAM CPU-only laptop cannot host large frontier models; model downloads require internet and local performance must be benchmarked.
+- No paid Resend, Supabase, Replit, paid hosting, paid object storage, paid domain or paid inference is assumed. Email verification and other external services remain disabled until a compliant free option is configured and tested.
+- Payments, wallet, live trading, SMS, push delivery, external social publishing, calls and licensed market data remain BLOCKED where they require paid providers, approvals, legal review or credentials. Do not simulate these as working features.
 
-### Out of scope for first client release
-- Separate public Web/PWA user app.
-- Separate Windows end-user desktop app.
-- These can be reconsidered later, but must not divert work from the Android deliverable.
+### Web + Android release gates
+1. Keep Python backend tests and Android debug APK build in CI.
+2. Add a dedicated Web/PWA validation job for manifest JSON, required assets, service-worker syntax and inline JavaScript syntax.
+3. Complete matching navigation and working API integration across Web and Android for each delivered module.
+4. Verify account/session handling, authorization, RTL/LTR, responsive layouts, loading/error/empty states and accessibility.
+5. Test Android installation and core workflows on a physical phone; test Web in real browsers.
+6. Verify the public static deployment and API separately. Do not publish private API tokens or local-only endpoints.
+7. Do not mark production-ready until deployment, security, backup/restore and real-client checks pass.
+
+### Supersession note
+The prior subsection titled “Android-only delivery decision — 2026-10-30” and its Android-only release scope are superseded by this owner-approved Web + Android decision. Keep historical decisions only as history; current execution must follow this section.
