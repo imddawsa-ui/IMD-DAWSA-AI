@@ -120,6 +120,57 @@ class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=12000)
 
 
+
+class TranslateRequest(BaseModel):
+    text: str = Field(min_length=1, max_length=5000)
+    target: str = Field(min_length=2, max_length=16, pattern=r"^[A-Za-z-]+$")
+    source: str = Field(default="auto", min_length=2, max_length=16, pattern=r"^[A-Za-z-]+$")
+
+
+@app.get("/api/i18n/languages")
+async def translation_languages():
+    """Return the language catalog supported by the configured LibreTranslate-compatible service."""
+    if not settings.translation_api_url:
+        return {"enabled": False, "provider": None, "languages": []}
+    headers = {}
+    if settings.translation_api_key:
+        headers["X-API-Key"] = settings.translation_api_key
+    try:
+        async with httpx.AsyncClient(timeout=settings.translation_timeout_seconds) as client:
+            response = await client.get(settings.translation_api_url + "/languages", headers=headers)
+            response.raise_for_status()
+            payload = response.json()
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail="Translation service is unavailable") from exc
+    if not isinstance(payload, list):
+        raise HTTPException(status_code=502, detail="Translation service returned an invalid language catalog")
+    return {"enabled": True, "provider": "LibreTranslate-compatible", "languages": payload}
+
+
+@app.post("/api/i18n/translate")
+async def translate_text(request: TranslateRequest):
+    """Translate text only when an operator explicitly configures a compatible provider."""
+    if not settings.translation_api_url:
+        raise HTTPException(status_code=503, detail="Translation is not configured. Set TRANSLATION_API_URL to a trusted LibreTranslate-compatible service.")
+    headers = {}
+    if settings.translation_api_key:
+        headers["X-API-Key"] = settings.translation_api_key
+    payload = {"q": request.text, "source": request.source, "target": request.target, "format": "text"}
+    try:
+        async with httpx.AsyncClient(timeout=settings.translation_timeout_seconds) as client:
+            response = await client.post(settings.translation_api_url + "/translate", data=payload, headers=headers)
+            response.raise_for_status()
+            result = response.json()
+    except httpx.TimeoutException as exc:
+        raise HTTPException(status_code=504, detail="Translation service timed out") from exc
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(status_code=503, detail="Translation service is unavailable") from exc
+    translated = result.get("translatedText") if isinstance(result, dict) else None
+    if not isinstance(translated, str) or not translated.strip():
+        raise HTTPException(status_code=502, detail="Translation service returned an invalid response")
+    return {"translated_text": translated, "source": request.source, "target": request.target, "provider": "LibreTranslate-compatible"}
+
+
 class RegisterRequest(BaseModel):
     email: str = Field(min_length=5, max_length=254)
     password: str = Field(min_length=10, max_length=128)
