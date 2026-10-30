@@ -432,7 +432,7 @@ Detailed consolidation and acceptance criteria: [NILE_PLATFORM_EXPANSION.md](NIL
 |---|---|---|
 | NILE CYBER DEFENSE | PLANNED | Defensive security checks, dependency/secret scanning, abuse signals and incident response; add CI security gates. |
 | NILE OBSERVABILITY | IN_PROGRESS | Request IDs, safe response headers and authenticated host diagnostics exist; structured logs, metrics, traces, dashboards and alerting remain. |
-| NILE BACKUP & RECOVERY | PLANNED | Define encrypted backup, retention, integrity and restore drill; no reliability claim before restore test. |
+| NILE BACKUP & RECOVERY | IN_PROGRESS | Added encrypted SQLite backup, integrity verification and guarded restore utilities in `app/backup.py`; automated tests added, CI and operational restore drill pending. No scheduler or retention policy yet. |
 | NILE AUTONOMOUS DEVELOPER | PLANNED | Build sandboxed code proposals, diff approval and reproducible test execution. |
 | NILE MULTIMODAL STUDIO | PLANNED | Capability-gated text/image/audio/video/document adapters; actual providers and hardware required. |
 | NILE WORKFLOW AUTOMATION | PLANNED | Durable jobs, idempotency, retries, cancellation, schedules and approvals. |
@@ -463,6 +463,7 @@ No row above is marked TESTED or VERIFIED until code, tests and the correspondin
 ## Updated execution notes — 2026-10-30
 - Added the consolidated expansion specification in NILE_PLATFORM_EXPANSION.md.
 - Implemented `app/diagnostics.py` with dependency-free CPU/RAM/disk resource snapshots and an authenticated `/api/system/resources` endpoint. Added access-control and secret-safe response tests; CI result is pending.
+- Implemented `app/backup.py` with encrypted SQLite backup creation, integrity verification and overwrite-guarded restore. Added automated backup/restore tests; CI and a real operational restore drill remain pending.
 - The new scope is approved and documented; implementation remains PLANNED unless explicitly stated otherwise in the table above.
 - Existing translation endpoints require a configured LibreTranslate-compatible provider; automatic global translation is not yet active.
 - Existing CI validates backend, Web and Android debug build, but a green debug build is not a signed production release or physical-device verification.
