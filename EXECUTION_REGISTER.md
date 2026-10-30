@@ -16,22 +16,23 @@ This file is the source of truth for delivery status. Update it whenever a featu
 |---|---|---|---|
 | FastAPI service foundation | IMPLEMENTED | Basic service exists | Expand API contracts, validation and tests |
 | Local Ollama chat | IMPLEMENTED | Local provider configured; hardware performance not benchmarked | Add provider health, model lifecycle and offline test |
-| SQLite conversation storage | IN_PROGRESS | Additive user_id migration and user-scoped reads/writes implemented; CI validation pending | Add migration framework, export and deletion controls |
-| Basic Web chat UI | IMPLEMENTED | Early interface only | Build responsive product shell and accessibility |
+| SQLite conversation storage | IMPLEMENTED | Additive user_id migration and user-scoped reads/writes implemented | Add migration framework, export and deletion controls |
+| Basic Web chat UI | IMPLEMENTED | Arabic PWA chat plus account and social feed/profile/post/follow/like/comment UI; browser/device validation pending | Add end-user messaging, accessibility and end-to-end tests |
 | Windows setup scripts | IMPLEMENTED | Batch setup/start/model scripts exist | Add desktop shell, diagnostics and packaging |
 | Windows Master Studio | PLANNED | No full desktop control application yet | Design and implement project dashboard |
 | Android client | IMPLEMENTED | Early network client only | Complete navigation, auth and device testing |
 | Android on-device offline AI | PLANNED | Not implemented | Select mobile runtime and test on target phones |
-| CI Python tests | TESTED | Latest recorded run passed at commit 298b8ca8d099a8953a6b2fd974cbc15ca1ddd21c | Expand coverage |
+| CI Python tests | TESTED | Latest completed green Python run 3fb51500e3070b4b0ffa3ee10d5f4479f746b04f; later messaging/CORS additions awaiting CI | Keep tests green after every module change |
 | CI Android debug build | TESTED | Latest recorded workflow run completed successfully | Add emulator/device smoke tests |
-| Email/password account API | IMPLEMENTED | Registration, login, PBKDF2 password hashes, signed expiring bearer tokens and /me endpoint committed; CI validation pending | Add email verification, recovery, refresh rotation, MFA and abuse controls |
-| Social network | PLANNED | Not implemented | Build profiles and posts after identity foundation |
-| Messaging and communities | PLANNED | Not implemented | Build real-time conversations and groups |
+| Email/password account API | TESTED | Resend email verification, signed bearer sessions, TOTP MFA, encrypted TOTP secrets and one-time recovery codes; Python CI passing at 3fb51500e3070b4b0ffa3ee10d5f4479f746b04f | Add password reset, refresh/session revocation, device management and shared abuse controls |
+| Social network | IMPLEMENTED | Profiles, text posts with visibility, feed, follows, likes and comments API; Web UI wired, browser validation pending | Add media uploads, search, notifications, moderation and real-device testing |
+| One-to-one messaging | IN_PROGRESS | Authenticated participant-scoped text-message API and database schema committed; CI run pending | Verify tests and add Web/Android messaging UI, read receipts and push notifications |
+| Groups and communities | PLANNED | Not implemented | Build group membership, roles and channels |
 | Marketplace and business tools | PLANNED | Not implemented | Define listings, enquiries and order workflows |
 | Learning, jobs and creator tools | PLANNED | Not implemented | Define modules and permissions |
 | External social publishing | BLOCKED | Requires platform API eligibility, OAuth apps and user authorization | Implement official adapters when credentials/scopes exist |
 | Admin and moderation | PLANNED | Not implemented | Build role-protected moderation and audit |
-| Production deployment | PLANNED | No production environment | Harden, deploy staging and verify recovery |
+| Production deployment | BLOCKED | No production backend host/domain, Resend sender credentials or verified Pages environment available in connector | Configure hosting, secrets, TLS, database, backups and verify staging before public release |
 
 ## Mandatory next sequence
 
