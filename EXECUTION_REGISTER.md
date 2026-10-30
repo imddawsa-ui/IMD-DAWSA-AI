@@ -208,3 +208,13 @@ The following changes were committed after the earlier baseline snapshot. They a
 - **Web script validation — IMPLEMENTED:** CI now parses the inline Web application script with Node's JavaScript parser in addition to checking the PWA manifest and service worker.
 - **CI evidence:** workflow run `41012516738` exposed an Android manifest-merge conflict between the main and debug manifests. The debug manifest was corrected using the manifest-merger replacement directive. Workflow run `41012640119` is the verification run for that correction; do not mark the Android build TESTED until it completes successfully. The Python and Web jobs from run `41012574153` completed successfully; its Android job failed on the manifest conflict before the correction.
 - **Known gap remains:** CI currently builds only a debug APK; it does not yet create a signed release, install on a physical phone, or verify backend connectivity from a real device.
+
+## Verification results — 2026-10-30
+
+GitHub Actions run [41012771718](https://github.com/imddawsa-ui/IMD-DAWSA-AI/actions/runs/41012771718), commit `adb78775305c726478d68bccec7e3c2977236b71`:
+
+- Python: **PASS** — `compileall` and `pytest -q`; 18 tests passed, 1 dependency deprecation warning.
+- Web: **PASS** — PWA manifest JSON, service-worker syntax, inline application JavaScript parsing, and required static asset checks.
+- Android: **PASS** — Gradle debug APK build completed successfully after resolving the debug/release manifest merge conflict.
+
+Therefore, at this commit the following slices are now **TESTED** by CI: bounded multi-turn chat context, marketplace seller listing/enquiry API ownership isolation, Android password masking, Android debug/release cleartext manifest configuration, and Web seller dashboard JavaScript parsing. This does not establish physical-device behavior, release signing, production hosting, or external service integration.
