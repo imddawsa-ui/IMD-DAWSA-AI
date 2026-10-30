@@ -133,6 +133,9 @@ class PostCreate(BaseModel):
 class CommentCreate(BaseModel):
     content: str = Field(min_length=1, max_length=1000)
 
+class DirectMessageCreate(BaseModel):
+    content: str = Field(min_length=1, max_length=4000)
+
 
 def check_access(token: str | None):
     if settings.api_access_token and not secrets.compare_digest(token or "", settings.api_access_token):
@@ -421,6 +424,61 @@ async def list_post_comments(
             WHERE c.post_id = ? ORDER BY c.id ASC LIMIT ?
         """, (post_id, max(1, min(limit, 100)))).fetchall()
     return {"items": [dict(row) for row in rows]}
+
+
+@app.post("/api/social/messages/{other_user_id}", status_code=201)
+async def send_direct_message(
+    other_user_id: int,
+    request: DirectMessageCreate,
+    authorization: str | None = Header(default=None),
+):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    content = request.content.strip()
+    if not content:
+        raise HTTPException(status_code=422, detail="Message cannot be blank")
+    if other_user_id == user["id"]:
+        raise HTTPException(status_code=400, detail="You cannot message yourself")
+    with connect() as db:
+        recipient = db.execute(
+            "SELECT id FROM users WHERE id = ? AND email_verified = 1", (other_user_id,)
+        ).fetchone()
+        if not recipient:
+            raise HTTPException(status_code=404, detail="Recipient not found")
+        cursor = db.execute(
+            "INSERT INTO direct_messages (sender_id, receiver_id, content) VALUES (?, ?, ?)",
+            (user["id"], other_user_id, content),
+        )
+        message_id = cursor.lastrowid
+    return {"id": message_id, "sender_id": user["id"], "receiver_id": other_user_id, "content": content}
+
+
+@app.get("/api/social/messages/{other_user_id}")
+async def list_direct_messages(
+    other_user_id: int,
+    limit: int = 50,
+    authorization: str | None = Header(default=None),
+):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    if other_user_id == user["id"]:
+        raise HTTPException(status_code=400, detail="Invalid conversation")
+    with connect() as db:
+        recipient = db.execute(
+            "SELECT id FROM users WHERE id = ? AND email_verified = 1", (other_user_id,)
+        ).fetchone()
+        if not recipient:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        rows = db.execute("""
+            SELECT id, sender_id, receiver_id, content, created_at
+            FROM direct_messages
+            WHERE (sender_id = ? AND receiver_id = ?)
+               OR (sender_id = ? AND receiver_id = ?)
+            ORDER BY id DESC LIMIT ?
+        """, (user["id"], other_user_id, other_user_id, user["id"], max(1, min(limit, 100)))).fetchall()
+    return {"items": [dict(row) for row in reversed(rows)]}
 
 
 @app.post("/api/chat")
