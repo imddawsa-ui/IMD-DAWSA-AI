@@ -305,7 +305,12 @@ async def search_social_users(
             ORDER BY follower_count DESC, u.id DESC
             LIMIT ?
         """, (viewer_id, viewer_id, pattern, pattern, max(1, min(limit, 30)))).fetchall()
-    return {"items": [dict(row) for row in rows]}
+    items = []
+    for row in rows:
+        item = dict(row)
+        item["is_following"] = bool(item["is_following"])
+        items.append(item)
+    return {"items": items}
 
 
 @app.get("/api/social/users/{user_id}")
