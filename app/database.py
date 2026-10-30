@@ -19,3 +19,15 @@ def initialize():
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         """)
+
+def list_conversations(limit: int = 50):
+    with connect() as db:
+        rows = db.execute(
+            "SELECT id, user_message, assistant_message, created_at FROM conversations ORDER BY id DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [dict(row) for row in rows]
+
+def clear_conversations():
+    with connect() as db:
+        db.execute("DELETE FROM conversations")
