@@ -281,3 +281,39 @@ The user confirmed that the complete product should be delivered as **Android on
 6. Produce a signed release APK/AAB only after protected signing configuration and explicit release authorization are in place.
 
 **Current status:** Android-only scope is selected and CI is configured to build a debug APK. This is not a completed Android Super App and does not prove that a current APK artifact is available until the updated workflow finishes successfully.
+
+
+## Owner-approved delivery scope — 2026-10-30
+
+The current approved scope is **USD 0, free/open-source tools only, Web + Android, all NILE ONE HUMAN modules delivered in phases**. This supersedes the historical Android-only decision above. The canonical product scope and constraints are in `PROJECT_MASTER_PLAN.md`.
+
+| Workstream | Current status | Evidence / boundary | Next action |
+|---|---|---|---|
+| Web + Android product decision | VERIFIED | Explicit owner decision recorded in project master plan | Keep both clients in all release planning |
+| Zero-dollar tool policy | VERIFIED | No paid APIs, hosting, domains or subscriptions approved | Use local-first/free tiers only; keep provider quotas and terms visible |
+| Master plan scope correction | IMPLEMENTED | Updated master plan commit `7d369f0085b7bafb6476da11123ec9f292aaaef4` | Keep this section canonical |
+| Backend CI | TESTED | Run `41057968296` completed successfully; backend job passed | Re-run on latest workflow commit |
+| Android debug APK CI | TESTED | Run `41057968296` built APK and uploaded artifact `imd-dawsa-ai-android-debug-apk` (9,088,574 bytes; 30-day retention) | Re-run on latest workflow commit; physical phone test still required |
+| Web/PWA CI validation | IN_PROGRESS | Added dedicated `web-client` job in workflow commit `131508285f64d0b98ec8b91ab5076704e2b9180d`; checks manifest JSON, service-worker syntax, inline JS syntax and required assets | Wait for Actions run and inspect all job results |
+| GitHub Pages | BLOCKED | Static Pages deployment is not verified; Pages is not a backend | Verify Pages settings/deployment or keep Web local/static artifact until deployment |
+| Cloudflare D1/Workers/Pages | MIXED | D1 and initial schema recorded above; Worker currently only health/readiness shell; Pages project created but no deployment | Do not route production clients to Worker until API parity, security and public smoke tests pass |
+| Android physical-device validation | BLOCKED | CI debug build only; no physical install evidence | Install APK on target phone and test critical flows |
+| Public backend hosting | BLOCKED | No production-ready free backend and database deployment verified | Evaluate free-tier terms or use owner-operated local backend |
+| External email verification | BLOCKED | Resend sender credentials/domain are not confirmed and paid dependency is not allowed | Find a compliant zero-cost alternative or keep public registration disabled |
+| Offline Android AI | PLANNED | No on-device inference runtime verified | Evaluate small quantized runtime and benchmark on actual phone |
+| NILE ONE remaining modules | PLANNED/BLOCKED | Scope retained in master plan; several modules need providers, approvals or infrastructure | Deliver dependency-ordered modules; never simulate payments, trading or external integrations |
+
+### Latest workflow change
+
+- Updated `.github/workflows/ci.yml` to run three independent jobs: backend tests, Web/PWA validation, and Android debug APK build/artifact upload.
+- Workflow commit: `131508285f64d0b98ec8b91ab5076704e2b9180d`.
+- **The new workflow has not yet been observed completing at the time of this entry.** Do not call the Web job TESTED until its run is green.
+- The previously successful run `41057968296` predates the Web job and proves only backend + Android CI for its commit.
+
+### Zero-cost policy details
+
+- GitHub Pages is only static hosting and is subject to GitHub Pages terms; it cannot host FastAPI, SQLite, Ollama or private account data.
+- GitHub Actions artifacts expire and free quotas/retention policies apply.
+- Cloudflare free-tier products have quotas and acceptable-use terms; a connected account or created resource is not proof of a production-ready free deployment.
+- Local Ollama is the baseline for zero-cost AI. Any cloud provider/API must remain optional and disabled unless its no-cost terms and quota are confirmed.
+- No paid services may be enabled without a new explicit owner decision.
