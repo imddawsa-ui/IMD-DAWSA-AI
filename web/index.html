@@ -98,6 +98,13 @@ footer{padding:0 20px 18px;color:#8195b3;font-size:11px}
 <div id="social-status" class="note" aria-live="polite">سجّل الدخول لتحميل مجتمعك.</div>
 <div id="social-feed" aria-live="polite"></div>
 <hr>
+<strong>اكتشاف الأشخاص</strong>
+<div class="social-actions">
+<input id="people-search" maxlength="80" placeholder="ابحث بالاسم أو اسم المستخدم">
+<button id="people-search-button" type="button" class="secondary">بحث عن أشخاص</button>
+</div>
+<div id="people-results" aria-live="polite"></div>
+<hr>
 <strong>الرسائل الخاصة</strong>
 <p class="note">أدخل رقم حساب الشخص الآخر لفتح محادثة خاصة نصية.</p>
 <div class="social-actions">
@@ -181,6 +188,32 @@ function renderFeed(items){
  }
 }
 async function loadSocial(){if(!base())throw new Error('أدخل عنوان الخادم أولاً');const d=await socialRequest('/api/social/feed?limit=40');renderFeed(d.items||[]);socialStatus('تم تحميل '+(d.items||[]).length+' منشوراً.')}
+async function searchPeople(){
+ const query=$('#people-search').value.trim();
+ if(query.length<2)throw new Error('اكتب حرفين على الأقل للبحث');
+ const params=new URLSearchParams({q:query});
+ const data=await socialRequest('/api/social/users?'+params.toString());
+ const root=$('#people-results');root.replaceChildren();
+ if(!data.items.length){const empty=document.createElement('p');empty.className='note';empty.textContent='لم نعثر على حسابات مطابقة.';root.appendChild(empty);return}
+ for(const person of data.items){
+  const card=document.createElement('article');card.className='social-post';
+  const title=document.createElement('strong');title.textContent=person.display_name+' · @'+person.handle;card.appendChild(title);
+  const bio=document.createElement('p');bio.textContent=person.bio||'لا توجد نبذة شخصية.';card.appendChild(bio);
+  const meta=document.createElement('p');meta.className='social-meta';meta.textContent='المتابعون: '+person.follower_count;card.appendChild(meta);
+  if(sessionToken){
+   const follow=document.createElement('button');follow.type='button';follow.className='secondary';follow.textContent=person.is_following?'إلغاء المتابعة':'متابعة';
+   follow.addEventListener('click',async()=>{
+    try{
+     await socialRequest('/api/social/users/'+person.id+'/follow',{method:person.is_following?'DELETE':'POST'});
+     await searchPeople();
+    }catch(e){socialStatus('تعذر تحديث المتابعة: '+e.message)}
+   });
+   card.appendChild(follow);
+  }
+  root.appendChild(card);
+ }
+}
+$('#people-search-button').addEventListener('click',()=>searchPeople().catch(e=>socialStatus('تعذر البحث: '+e.message)));
 async function loadDirectMessages(){if(!sessionToken)throw new Error('سجّل الدخول أولاً');const otherId=Number($('#message-user-id').value);if(!Number.isInteger(otherId)||otherId<1)throw new Error('أدخل رقم مستخدم صحيحاً');const [d,me]=await Promise.all([socialRequest('/api/social/messages/'+otherId),socialRequest('/api/auth/me')]);const thread=$('#direct-message-thread');thread.replaceChildren();for(const message of d.items){const item=document.createElement('p');item.className='social-comment';item.textContent=(message.sender_id===Number(me.user.id)?'أنت':'الطرف الآخر')+': '+message.content+' · '+message.created_at;thread.appendChild(item)}thread.dataset.otherUserId=String(otherId);socialStatus('تم تحميل '+d.items.length+' رسالة.')}
 $('#load-messages').addEventListener('click',()=>loadDirectMessages().catch(e=>socialStatus('تعذر فتح المحادثة: '+e.message)));
 $('#direct-message-form').addEventListener('submit',async e=>{e.preventDefault();try{if(!sessionToken)throw new Error('سجّل الدخول أولاً');const otherId=Number($('#message-user-id').value);const content=$('#direct-message-text').value.trim();if(!otherId||!content)throw new Error('أدخل رقم المستخدم والرسالة');await socialRequest('/api/social/messages/'+otherId,{method:'POST',body:JSON.stringify({content})});$('#direct-message-text').value='';await loadDirectMessages()}catch(err){socialStatus('تعذر إرسال الرسالة: '+err.message)}});
