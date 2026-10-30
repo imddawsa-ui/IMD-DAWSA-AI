@@ -146,7 +146,7 @@ def _new_challenge(user_id: int) -> str:
     return payload + "." + signature
 
 
-def _consume_challenge(token: str) -> int | None:
+def _challenge_details(token: str) -> tuple[int, str] | None:
     try:
         payload, signature = token.split(".", 1)
         expected = base64.urlsafe_b64encode(hmac.new(
@@ -160,17 +160,26 @@ def _consume_challenge(token: str) -> int | None:
             return None
     except (ValueError, TypeError, KeyError, json.JSONDecodeError):
         return None
+    nonce_hash = _digest(nonce)
+    with connect() as db:
+        row = db.execute(
+            "SELECT user_id FROM two_factor_challenges WHERE nonce_hash = ? AND expires_at > ? AND used_at IS NULL",
+            (nonce_hash, int(time.time())),
+        ).fetchone()
+    if not row or int(row["user_id"]) != user_id:
+        return None
+    return user_id, nonce_hash
+
+
+def _consume_challenge_nonce(nonce_hash: str) -> bool:
     with connect() as db:
         db.execute("BEGIN IMMEDIATE")
-        row = db.execute(
-            "SELECT id, user_id FROM two_factor_challenges WHERE nonce_hash = ? AND expires_at > ? AND used_at IS NULL",
-            (_digest(nonce), int(time.time())),
-        ).fetchone()
-        if not row or int(row["user_id"]) != user_id:
-            return None
-        db.execute("UPDATE two_factor_challenges SET used_at = CURRENT_TIMESTAMP WHERE id = ?", (row["id"],))
-    return user_id
-
+        cursor = db.execute(
+            "UPDATE two_factor_challenges SET used_at = CURRENT_TIMESTAMP "
+            "WHERE nonce_hash = ? AND expires_at > ? AND used_at IS NULL",
+            (nonce_hash, int(time.time())),
+        )
+        return cursor.rowcount == 1
 
 def _totp_counter(secret: str, code: str) -> int | None:
     totp = pyotp.TOTP(secret)
@@ -329,7 +338,9 @@ async def disable_totp(request: DisableTotpRequest, authorization: str | None = 
 
 @router.post("/2fa/login")
 async def complete_2fa_login(request: TwoFactorLoginRequest):
-    user_id = _consume_challenge(request.challenge_token)
+    details = _challenge_details(request.challenge_token)
+    user_id = details[0] if details else None
+    nonce_hash = details[1] if details else None
     user = get_user(user_id) if user_id else None
     if not user or not user.get("email_verified") or not user.get("totp_enabled"):
         raise HTTPException(status_code=401, detail="Invalid, expired, or already used sign-in challenge")
@@ -338,4 +349,6 @@ async def complete_2fa_login(request: TwoFactorLoginRequest):
         valid = verify_recovery_code(user_id, request.code)
     if not valid:
         raise HTTPException(status_code=401, detail="Invalid authenticator or recovery code")
+    if not _consume_challenge_nonce(nonce_hash):
+        raise HTTPException(status_code=401, detail="Sign-in challenge was already used")
     return {"user": user, "access_token": issue_access_token(user_id), "token_type": "bearer"}
