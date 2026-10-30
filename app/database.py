@@ -129,6 +129,17 @@ def initialize():
         db.execute("CREATE INDEX IF NOT EXISTS idx_conversations_user_id_id ON conversations(user_id, id DESC)")
         db.execute("CREATE INDEX IF NOT EXISTS idx_posts_created_id ON posts(id DESC)")
         db.execute("CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id)")
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS direct_messages (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sender_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                receiver_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                content TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CHECK (sender_id <> receiver_id)
+            )
+        """)
+        db.execute("CREATE INDEX IF NOT EXISTS idx_direct_messages_pair ON direct_messages(sender_id, receiver_id, id DESC)")
 
 
 def create_user(email: str, password_hash: str, display_name: str):
