@@ -3,7 +3,7 @@
 Privacy-first AI assistant and unified platform foundation for Windows 11, 8 GB RAM and CPU-only hardware. The repository is being expanded in verified milestones; it is not yet a production-ready Super App.
 
 ## Implemented foundation
-- Arabic-first Web/PWA client and early Android network client.
+- Multilingual Web/PWA client and early Android network client. User-interface localization is separate from the English-only engineering codebase.
 - FastAPI service with local Ollama and optional OpenAI-compatible provider.
 - SQLite persistence and health/readiness endpoints.
 - Email/password registration with Resend email verification, PBKDF2 password hashing and signed expiring bearer sessions.
