@@ -26,6 +26,9 @@ class Settings:
     api_public_url: str = os.getenv("API_PUBLIC_URL", "http://127.0.0.1:8000")
     email_verification_ttl_seconds: int = int(os.getenv("EMAIL_VERIFICATION_TTL_SECONDS", "900"))
     max_message_chars: int = int(os.getenv("MAX_MESSAGE_CHARS", "12000"))
+    translation_api_url: str = os.getenv("TRANSLATION_API_URL", "").strip().rstrip("/")
+    translation_api_key: str = os.getenv("TRANSLATION_API_KEY", "").strip()
+    translation_timeout_seconds: float = float(os.getenv("TRANSLATION_TIMEOUT_SECONDS", "20"))
     cors_origins: tuple[str, ...] = tuple(
         origin.strip()
         for origin in os.getenv(
