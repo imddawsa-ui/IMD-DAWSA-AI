@@ -20,6 +20,7 @@ from .database import (
     create_user, get_user, get_user_by_email, save_conversation,
 )
 from .llm import generate_reply, ModelUnavailable
+from .diagnostics import collect_resource_snapshot
 from .account_security import (
     router as account_security_router,
     create_verification_token,
@@ -855,3 +856,13 @@ async def delete_conversations(
         raise HTTPException(status_code=401, detail="Authentication required")
     clear_conversations(user["id"] if user else None)
     return {"deleted": True}
+
+
+@app.get("/api/system/resources")
+async def system_resources(authorization: str | None = Header(default=None)):
+    """Return authenticated, secret-safe host resource diagnostics."""
+    require_auth_configuration()
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return collect_resource_snapshot(settings.database_path)
