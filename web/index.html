@@ -46,11 +46,64 @@ button.secondary{background:#243750;color:#e8f1ff;border:1px solid #3a506c}butto
 form{display:flex;gap:10px;margin-top:14px;align-items:stretch}textarea{flex:1;min-height:58px;max-height:180px;resize:vertical}
 footer{padding:0 20px 18px;color:#8195b3;font-size:11px}
 @media(max-width:620px){header{align-items:flex-start;flex-direction:column}.toolbar{display:grid;grid-template-columns:1fr 1fr}#endpoint{grid-column:1/-1}#token{width:100%}form{flex-direction:column}form button{min-height:46px}.msg{max-width:98%}}
+
+/* NILE ONE visual system */
+:root{--brand-a:#27d8f2;--brand-b:#765cff;--surface:#111d30;--surface-raised:#172945;--text:#edf3ff;--muted:#a9bad2;--line:#304968}
+body{background:radial-gradient(ellipse at 10% 0%,color-mix(in srgb,var(--brand-b) 22%,transparent),transparent 38%),radial-gradient(ellipse at 90% 10%,color-mix(in srgb,var(--brand-a) 16%,transparent),transparent 34%),#080f1e;color:var(--text);transition:background .25s,color .25s}
+.panel{background:var(--surface);border-color:var(--line)}
+.logo{background:linear-gradient(135deg,var(--brand-a),var(--brand-b));color:#071326;box-shadow:0 0 28px color-mix(in srgb,var(--brand-a) 40%,transparent);font-size:0}
+.logo:before{content:"N";font-size:29px;font-weight:950;color:#071326;text-shadow:2px 2px 0 #fff8}
+button{background:linear-gradient(110deg,var(--brand-a),var(--brand-b));color:#071326}
+button.secondary{background:var(--surface-raised);border-color:var(--line);color:var(--text)}
+input,textarea{border-color:var(--line)}
+.brand h1{letter-spacing:.04em}
+.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:22px;align-items:center;padding:24px;margin:10px 0 20px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(130deg,color-mix(in srgb,var(--brand-a) 9%,var(--surface)),var(--surface-raised));overflow:hidden}
+.hero h2{font-size:clamp(26px,5vw,44px);line-height:1.08;margin:8px 0 12px}
+.hero h2 span{background:linear-gradient(90deg,var(--brand-a),var(--brand-b));background-clip:text;color:transparent}
+.hero p{color:var(--muted);line-height:1.8}
+.hero img{width:100%;display:block;border-radius:16px;border:1px solid var(--line)}
+.eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--brand-a);font-weight:800}
+.theme-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0 16px}
+.theme-tools select{font:inherit;color:var(--text);background:var(--surface-raised);border:1px solid var(--line);border-radius:12px;padding:10px}
+.theme-swatches{display:flex;gap:6px}
+.theme-swatch{width:26px;height:26px;border-radius:50%;border:2px solid #fff8;padding:0;min-width:26px}
+.feature-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0 22px}
+.feature-card{overflow:hidden;border:1px solid var(--line);border-radius:16px;background:var(--surface-raised);transition:transform .2s,border-color .2s}
+.feature-card:hover{transform:translateY(-3px);border-color:var(--brand-a)}
+.feature-card img{width:100%;height:105px;object-fit:cover;display:block}
+.feature-card div{padding:10px}
+.feature-card strong{font-size:13px}
+.feature-card p{font-size:11px;color:var(--muted);line-height:1.5;margin:5px 0 0}
+body[data-theme="light"]{background:#eef3fb;color:#14223b;color-scheme:light}
+body[data-theme="light"] .panel,body[data-theme="light"] #account,body[data-theme="light"] #social,body[data-theme="light"] #marketplace{background:#fff;border-color:#d6e0ef}
+body[data-theme="light"] input,body[data-theme="light"] textarea,body[data-theme="light"] #messages{background:#f4f7fc;color:#17243b;border-color:#c8d5e7}
+body[data-theme="light"] .hero{background:linear-gradient(130deg,#e7f6ff,#f1edff)}
+body[data-theme="light"] .hero p,body[data-theme="light"] .sub,body[data-theme="light"] .note{color:#536783}
+body[data-theme="light"] .msg.assistant{background:#e7f2f4;color:#142b38}
+body[data-theme="light"] .msg.user{background:#e2eaff;color:#182a4b}
+body[data-theme="light"] button.secondary{background:#eaf0fa;color:#1a2b47;border-color:#c8d5e7}
+body[data-theme="light"] .theme-tools select{background:#fff;color:#17243b}
+body[data-theme="violet"]{--brand-a:#d18cff;--brand-b:#7c5cff;--surface:#17132b;--surface-raised:#251c42;--line:#514074;--text:#f6efff;--muted:#c4b6dd}
+body[data-theme="emerald"]{--brand-a:#53edc0;--brand-b:#19a9a4;--surface:#0d2427;--surface-raised:#15373a;--line:#28615e;--text:#e8fffa;--muted:#a5d2c9}
+@media(max-width:720px){.hero{grid-template-columns:1fr;padding:16px}.hero img{max-height:190px;object-fit:cover}.feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;scroll-behavior:auto!important}}
+
 </style>
 </head>
 <body><div class="shell"><div class="panel">
 <header><div class="brand"><div class="logo">IMD</div><div><h1>IMD DAWSA AI</h1><p class="sub">مساحة ذكاء اصطناعي خاصة بك</p></div></div><div id="status" class="status">غير متصل بالخادم</div></header>
 <main>
+
+<section class="hero" aria-label="NILE ONE introduction">
+ <div><div class="eyebrow">ONE PLATFORM · INFINITE POSSIBILITIES</div><h2>Meet your next<br><span>intelligent world.</span></h2><p>NILE ONE HUMAN brings AI assistance, creativity, learning, community and business tools into one connected experience.</p><div class="theme-tools"><label for="theme-select">Visual theme</label><select id="theme-select" aria-label="Visual theme"><option value="aurora">Aurora Dark</option><option value="light">Studio Light</option><option value="violet">Nebula Purple</option><option value="emerald">Emerald Focus</option></select><div class="theme-swatches" aria-hidden="true"><span class="theme-swatch" style="background:linear-gradient(135deg,#27d8f2,#765cff)"></span><span class="theme-swatch" style="background:linear-gradient(135deg,#d18cff,#7c5cff)"></span><span class="theme-swatch" style="background:linear-gradient(135deg,#53edc0,#19a9a4)"></span></div></div></div>
+ <img src="./assets/hero-visual.svg" alt="Abstract NILE ONE artificial intelligence visual" loading="eager">
+</section>
+<section class="feature-grid" aria-label="Platform capabilities">
+ <article class="feature-card"><img src="./assets/ai-assistant.svg" alt="" loading="lazy"><div><strong>AI Assistant</strong><p>Your intelligent workspace for ideas and answers.</p></div></article>
+ <article class="feature-card"><img src="./assets/learning.svg" alt="" loading="lazy"><div><strong>Learning Studio</strong><p>Build skills with a focused learning experience.</p></div></article>
+ <article class="feature-card"><img src="./assets/marketplace.svg" alt="" loading="lazy"><div><strong>Marketplace</strong><p>Discover offers and grow your business.</p></div></article>
+ <article class="feature-card"><img src="./assets/creative.svg" alt="" loading="lazy"><div><strong>Creative Lab</strong><p>Explore visual ideas and creative workflows.</p></div></article>
+</section>
 <div class="toolbar">
 <input id="endpoint" type="url" inputmode="url" placeholder="عنوان الخادم، مثال: https://api.example.com">
 <input id="token" type="password" autocomplete="off" placeholder="رمز API (إن لزم)">
@@ -304,6 +357,17 @@ $('#create-listing').addEventListener('click',async()=>{
  try{if(!sessionToken)throw new Error('سجّل الدخول أولاً');const price=$('#listing-price').value;const body={title:$('#listing-title').value.trim(),description:$('#listing-description').value.trim(),category:$('#listing-category').value.trim()||'general',currency:($('#listing-currency').value.trim()||'USD').toUpperCase()};if(price)body.price_amount=Number(price);
  const r=await socialRequest('/api/marketplace/listings',{method:'POST',body:JSON.stringify(body)});$('#market-status').textContent='تم نشر العرض رقم '+r.id;$('#listing-title').value='';$('#listing-description').value='';$('#listing-price').value='';await loadMarketplace();await loadSellerDashboard()
  }catch(e){$('#market-status').textContent='تعذر نشر العرض: '+e.message}
+});
+
+
+const themeSelect=$('#theme-select');
+const savedTheme=localStorage.getItem('imd_visual_theme')||'aurora';
+document.body.dataset.theme=savedTheme==='aurora'?'aurora':savedTheme;
+themeSelect.value=savedTheme;
+themeSelect.addEventListener('change',()=>{
+ const nextTheme=themeSelect.value;
+ document.body.dataset.theme=nextTheme;
+ localStorage.setItem('imd_visual_theme',nextTheme);
 });
 
 const languageSelect=$('#preferred-language');
