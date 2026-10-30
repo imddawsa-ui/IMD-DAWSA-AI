@@ -153,6 +153,12 @@ def test_totp_setup_login_and_single_use_recovery_codes(monkeypatch, tmp_path):
 
         # Use the next time-step code so it is not the same code used to activate MFA.
         next_code = pyotp.TOTP(secret).at((int(time.time()) // 30 + 1) * 30)
+        wrong_code = str((int(next_code) + 1) % 1000000).zfill(6)
+        rejected = client.post("/api/auth/2fa/login", json={
+            "challenge_token": login.json()["challenge_token"], "code": wrong_code
+        })
+        assert rejected.status_code == 401
+        # A typo must not burn the challenge; a valid code can still complete this sign-in.
         completed = client.post("/api/auth/2fa/login", json={
             "challenge_token": login.json()["challenge_token"], "code": next_code
         })
