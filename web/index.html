@@ -57,9 +57,11 @@ footer{padding:0 20px 18px;color:#8195b3;font-size:11px}
 </div>
 <div class="account-actions">
 <button id="register" type="button">إنشاء حساب</button>
+<button id="resend-verification" type="button" class="secondary">إعادة إرسال التحقق</button>
 <button id="login" type="button" class="secondary">تسجيل الدخول</button>
 <button id="mfa-setup" type="button" class="secondary">إعداد المصادقة الثنائية</button>
 <button id="mfa-enable" type="button" class="secondary">تفعيل المصادقة</button>
+<button id="mfa-disable" type="button" class="secondary">تعطيل المصادقة</button>
 <button id="logout" type="button" class="secondary">تسجيل الخروج</button>
 </div>
 <p id="account-status">سجّل الدخول أو أنشئ حساباً جديداً. يجب تأكيد البريد من الرسالة قبل تسجيل الدخول.</p>
@@ -82,6 +84,8 @@ function headers(){const h={'Content-Type':'application/json'};if(token.value.tr
 function accountStatus(message){$('#account-status').textContent=message}
 async function accountRequest(path,body){const r=await fetch(base()+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);return d}
 $('#register').addEventListener('click',async()=>{try{const d=await accountRequest('/api/auth/register',{email:$('#account-email').value.trim(),password:$('#account-password').value,display_name:$('#account-name').value.trim()});accountStatus(d.message||'تحقق من بريدك الإلكتروني لإكمال التسجيل.')}catch(e){accountStatus('تعذر إنشاء الحساب: '+e.message)}});
+$('#resend-verification').addEventListener('click',async()=>{try{const r=await fetch(base()+'/api/auth/resend-verification?email='+encodeURIComponent($('#account-email').value.trim()),{method:'POST'});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);accountStatus(d.message||'إذا كان الحساب يحتاج إلى التحقق، فستصلك رسالة.')}catch(e){accountStatus('تعذر إرسال رسالة التحقق: '+e.message)}});
+$('#mfa-disable').addEventListener('click',async()=>{try{const r=await fetch(base()+'/api/auth/2fa/disable',{method:'POST',headers:headers(),body:JSON.stringify({password:$('#account-password').value,code:$('#mfa-code').value.trim()})});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);$('#recovery-codes').textContent='';$('#mfa-qr').hidden=true;accountStatus('تم تعطيل المصادقة الثنائية.')}catch(e){accountStatus('تعذر تعطيل المصادقة: '+e.message)}});
 $('#login').addEventListener('click',async()=>{try{if(mfaChallenge){const d=await accountRequest('/api/auth/2fa/login',{challenge_token:mfaChallenge,code:$('#mfa-code').value.trim()});sessionToken=d.access_token;sessionStorage.setItem('imd_session_token',sessionToken);mfaChallenge='';accountStatus('تم تسجيل الدخول بعد المصادقة الثنائية.');return}const d=await accountRequest('/api/auth/login',{email:$('#account-email').value.trim(),password:$('#account-password').value});if(d.requires_2fa){mfaChallenge=d.challenge_token;accountStatus('أدخل رمز تطبيق المصادقة ثم اضغط تسجيل الدخول مرة أخرى.');return}sessionToken=d.access_token;sessionStorage.setItem('imd_session_token',sessionToken);accountStatus('تم تسجيل الدخول بنجاح.')}catch(e){accountStatus('تعذر تسجيل الدخول: '+e.message)}});
 $('#mfa-code').addEventListener('keydown',e=>{if(e.key==='Enter'&&mfaChallenge){e.preventDefault();$('#login').click()}});
 $('#mfa-setup').addEventListener('click',async()=>{try{const r=await fetch(base()+'/api/auth/2fa/setup',{method:'POST',headers:headers()});const d=await r.json();if(!r.ok)throw new Error(d.detail||'HTTP '+r.status);$('#mfa-qr').src='data:image/png;base64,'+d.qr_code_png_base64;$('#mfa-qr').hidden=false;accountStatus('امسح رمز QR بتطبيق المصادقة ثم أدخل الرمز واضغط تفعيل المصادقة.')}catch(e){accountStatus('تعذر إعداد المصادقة: '+e.message)}});
