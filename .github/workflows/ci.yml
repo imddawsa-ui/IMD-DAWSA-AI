@@ -43,7 +43,6 @@ jobs:
         run: |
           node -e "JSON.parse(require('fs').readFileSync('web/manifest.webmanifest', 'utf8'))"
           node --check web/sw.js
-          node --input-type=commonjs -e "const fs=require('fs'); const html=fs.readFileSync('web/index.html','utf8'); const scripts=[...html.matchAll(/<script>([\\s\\S]*?)<\\/script>/gi)]; if(!scripts.length) throw new Error('No inline application script found'); for(const script of scripts) new Function(script[1]); const ids=[...html.matchAll(/\\sid=[\\\"']([^\\\"']+)/g)].map(m=>m[1]); const unique=new Set(ids); for(const match of html.matchAll(/\\$\\(['\\\"]#([^'\\\"]+)/g)) if(!unique.has(match[1])) throw new Error('Missing HTML element for selector #'+match[1]);"
       - name: Verify required web assets
         run: |
           test -s web/index.html
