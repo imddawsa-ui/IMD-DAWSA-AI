@@ -478,3 +478,12 @@ No row above is marked TESTED or VERIFIED until code, tests and the correspondin
 - Updated README.md with the zero-cost local setup flow.
 - These scripts are committed but have not been run on the user's Windows computer. No physical Android device test, production deployment, public HTTPS endpoint or all-language translation verification is claimed.
 - Account registration still requires a configured email provider and HTTPS public URL. The installer intentionally does not weaken email verification or create an insecure bypass.
+
+
+## Encrypted local backup workflow — 2026-10-30
+
+- Added `app/backup_cli.py` for operator-driven create, verify and guarded restore commands.
+- Added `backup_windows.bat` to create and verify a local encrypted SQLite backup.
+- Added `scripts/configure_local.py` to generate missing/invalid authentication and backup encryption keys while preserving existing valid keys; the Windows installer now calls it.
+- Added tests for secure key generation and preservation. CI has not yet confirmed these latest commits.
+- Keep `BACKUP_ENCRYPTION_KEY` separate from copied backup files. If the key is lost, encrypted backups cannot be recovered. Automated scheduling, retention, off-device copies and a real restore drill remain outstanding.
