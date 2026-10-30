@@ -11,6 +11,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.foundation.text.KeyboardOptions
@@ -37,9 +38,17 @@ private data class MarketItem(val id: Int, val title: String, val description: S
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NileOneApp() {
+    val context = LocalContext.current
+    val preferences = remember { context.getSharedPreferences("nile_one_preferences", android.content.Context.MODE_PRIVATE) }
     var endpoint by remember { mutableStateOf("") }
     val languageOptions = listOf("ar" to "العربية", "en" to "English", "fr" to "Français", "es" to "Español", "pt" to "Português", "sw" to "Kiswahili", "am" to "አማርኛ", "so" to "Soomaali", "ha" to "Hausa", "zh" to "中文", "hi" to "हिन्दी", "ur" to "اردو", "bn" to "বাংলা", "ru" to "Русский", "de" to "Deutsch", "it" to "Italiano", "tr" to "Türkçe", "id" to "Bahasa Indonesia", "ja" to "日本語", "ko" to "한국어", "fa" to "فارسی", "ps" to "پښتو", "nl" to "Nederlands", "pl" to "Polski", "uk" to "Українська", "zu" to "isiZulu", "rw" to "Kinyarwanda", "lg" to "Luganda")
-    var languageCode by remember { mutableStateOf(languageOptions.firstOrNull { it.first == java.util.Locale.getDefault().language }?.first ?: "en") }
+    var languageCode by remember {
+        mutableStateOf(
+            preferences.getString("preferred_language", null)
+                ?: languageOptions.firstOrNull { it.first == java.util.Locale.getDefault().language }?.first
+                ?: "en"
+        )
+    }
     var languageMenuOpen by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -109,7 +118,7 @@ private fun NileOneApp() {
                     Box {
                         OutlinedButton(onClick = { languageMenuOpen = true }) { Text(languageOptions.firstOrNull { it.first == languageCode }?.second ?: languageCode) }
                         DropdownMenu(expanded = languageMenuOpen, onDismissRequest = { languageMenuOpen = false }) {
-                            languageOptions.forEach { option -> DropdownMenuItem(text = { Text(option.second) }, onClick = { languageCode = option.first; languageMenuOpen = false; generalStatus = "لغة الترجمة: " + option.second + ". يتطلب ذلك إعداد محرك ترجمة على الخادم." }) }
+                            languageOptions.forEach { option -> DropdownMenuItem(text = { Text(option.second) }, onClick = { languageCode = option.first; preferences.edit().putString("preferred_language", option.first).apply(); languageMenuOpen = false; generalStatus = "تم حفظ اللغة: " + option.second + ". ترجمة الردود تتطلب إعداد محرك ترجمة على الخادم." }) }
                         }
                     }
                 }
