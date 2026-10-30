@@ -125,3 +125,53 @@ Never request passwords, one-time codes or private signing keys in chat. Use sec
 | Email verification, password recovery, OAuth, MFA and refresh-token rotation | PLANNED | Requires mail/SMS delivery, OAuth applications and additional session/security work |
 | Social profiles, posts, follows, reactions and comments | PLANNED | Next implementation after identity tests are green |
 | Production readiness | BLOCKED | Requires HTTPS hosting, secret configuration, rate limiting, email verification and security review |
+
+## Corrected implementation audit — 2026-10-30
+
+This section supersedes any older row above that conflicts with the current repository code. It is based on source inspection, not a claim that external services or real devices have been tested.
+
+| Workstream | Current evidence-based status | Implemented now | Still missing / verification gate |
+|---|---|---|---|
+| FastAPI + SQLite foundation | IMPLEMENTED | API service, SQLite persistence, additive schema updates, health/readiness endpoints | Production database, managed migrations, backups/restore, load testing |
+| Local/cloud AI gateway | IMPLEMENTED | Ollama local chat and optional OpenAI-compatible chat provider | Streaming, model registry, provider fallback, tool calling, measured offline benchmark, cloud provider live test |
+| Identity and account security | IMPLEMENTED | Password hashing, signed expiring bearer tokens, email verification flow, TOTP MFA, recovery codes, basic rate limits | Password reset, refresh/session revocation, device sessions, OAuth, phone verification, distributed abuse controls, independent security review |
+| Social network core | IMPLEMENTED | Profiles, public/follower/private text posts, feed, follow/unfollow, likes, comments, basic Web UI | Media upload, stories/reels, search, shares/bookmarks, blocks/reports, moderation, notifications, groups/channels/events, real-time updates |
+| Direct messaging | IMPLEMENTED | Authenticated participant-scoped one-to-one text-message API and basic Web UI | Conversation discovery, group chats, attachments, delivery/read state, realtime transport, push notifications, block/report controls |
+| Marketplace | IMPLEMENTED | Listing discovery/create, categories/search filters, seller enquiries, basic Web UI | Orders, checkout, payment confirmation, refunds/disputes, shipping, seller dashboards, reviews, fraud controls |
+| Web/PWA | IMPLEMENTED | Arabic-first static web client, manifest, service worker shell cache, account/social/marketplace/chat UI | Browser/device E2E tests, production API URL, HTTPS deployment, accessibility and localization review |
+| Android | IN_PROGRESS | Early Kotlin/Compose network client; CI debug build workflow exists | Full navigation and feature parity, secure token lifecycle, real phone testing, signed release, push/media, offline/on-device AI |
+| Windows | IN_PROGRESS | Windows install/start/model scripts for local backend | Actual desktop application / Master Studio, diagnostics, installer, update system, signed release |
+| Automated CI | IN_PROGRESS | Python tests, Android debug build and static Web checks are configured | Verify latest run on current main head; add browser E2E, API integration matrix, dependency/security scans |
+| GitHub Pages | BLOCKED | Deployment workflow has required Pages permissions and deploy steps | Repository Pages site must be enabled in Settings → Pages; then verify successful deployment and live URL |
+| Production backend | BLOCKED | No verified production API host or domain configured | Choose/authorize host, configure secrets and TLS, production database, object storage, backups, monitoring, staging acceptance |
+| Resend email delivery | BLOCKED | Integration code/configuration exists | No verified sender domain/API credentials currently confirmed; live delivery not tested |
+| Supabase production data | BLOCKED | Connector available | No Supabase project currently visible; no database provisioned |
+| Cloudflare production edge/storage | BLOCKED | Connector available | No zone currently visible; domain/zone and storage configuration absent |
+| Payments and subscriptions | BLOCKED | No live payment workflow | Payment provider onboarding, country eligibility, merchant verification, webhooks, tax/legal review and explicit activation |
+| Forex information | PLANNED | No complete forex module verified | Licensed FX feed, market data terms, charts, calendar, alerting, disclaimers and tests |
+| Live trading / broker execution | BLOCKED | No broker integration verified | Regulated eligible broker, official API, user authorization, risk limits, paper-trading evidence and compliance review |
+| External social publishing | BLOCKED | No official platform adapter verified | App review, OAuth scopes, API permissions and per-platform integration tests |
+| Remaining platform modules | PLANNED | Scope documented in PROJECT_MASTER_PLAN.md | Communities, learning, jobs, creator suite, embedded apps, enterprise, wallet, CRM, project management, cloud workspace, developer store, admin/moderation, voice/video, maps/bookings and analytics still need implementation |
+
+### Current release truth
+
+- This repository is an active prototype/foundation, not a complete Super App and not production-ready.
+- A passing CI run only verifies the commit and jobs actually covered by that run. Do not reuse an old green result as proof for newer commits.
+- A workflow file is not proof of a successful deployment. GitHub Pages is not the FastAPI backend and cannot host Ollama or SQLite.
+- A visible UI control is not a completed feature unless the full backend workflow, authorization, failure states and tests exist.
+- The target 8 GB RAM / CPU-only Windows machine can run a small quantized local model with performance constraints; it cannot realistically train a frontier-scale model from scratch.
+- Android currently calls a backend; it is not an independently offline AI device client.
+- No third-party app, payment account, broker, sender domain or hosting resource is considered connected until a live integration test confirms it.
+
+### Next execution order
+
+1. Reconcile and pass current Python/API tests; fix any failing or missing coverage.
+2. Complete marketplace order lifecycle and user-facing messaging flows.
+3. Finish account lifecycle and session security.
+4. Build media upload/storage, moderation, reports, notifications and community features.
+5. Complete Android client against the real API and verify on a physical device.
+6. Build Windows Master Studio and a distributable Windows client.
+7. Implement the AI knowledge/agent/file/voice pipeline with explicit permissions.
+8. Add finance/forex information using licensed data; keep live trading blocked until all safeguards and provider approvals exist.
+9. Configure staging infrastructure and verify the entire stack end-to-end.
+10. Complete security, backup/restore, performance, accessibility and release checks before production launch.
