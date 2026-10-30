@@ -10,7 +10,9 @@ Privacy-first AI assistant and unified platform foundation for Windows 11, 8 GB 
 - Optional TOTP multi-factor authentication, encrypted authenticator secrets and one-time recovery codes.
 - Social profiles, public/follower/private text posts, feed, follows, likes and comments.
 - Authenticated one-to-one private messaging API.
+- Marketplace seller dashboard APIs for owned listings and buyer enquiries, with a basic Web seller inbox.
 - User-scoped conversation history for authenticated accounts.
+- Recent conversation context (up to eight prior turns) supplied to local and cloud models.
 - Automated Python, Web and Android CI workflows.
 
 ## Account and security setup
