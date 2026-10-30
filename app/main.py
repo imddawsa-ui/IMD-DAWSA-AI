@@ -164,7 +164,7 @@ async def home():
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "app": settings.app_name, "version": "0.5.0"}
+    return {"status": "ok", "app": settings.app_name, "version": "0.6.0"}
 
 
 @app.get("/api/readiness")
