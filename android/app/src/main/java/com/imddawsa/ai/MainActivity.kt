@@ -44,7 +44,7 @@ private fun IMDApp() {
     var mfaCode by remember { mutableStateOf("") }
     var totpSecret by remember { mutableStateOf("") }
     var recoveryCodes by remember { mutableStateOf("") }
-    var accountStatus by remember { mutableStateOf("أنشئ حساباً أو سجّل الدخول. يلزم تأكيد البريد أولاً.") }
+    var accountStatus by remember { mutableStateOf("أنشئ حساباً أو سجّل الدخول للبدء.") }
     var prompt by remember { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var status by remember { mutableStateOf("غير متصل — أدخل عنوان خادم الكمبيوتر") }
@@ -71,7 +71,7 @@ private fun IMDApp() {
                         scope.launch {
                             busy = true
                             try {
-                                val body = JSONObject().put("email", email.trim()).put("password", password).put("display_name", displayName.trim())
+                                val body = JSONObject().put("email", email.trim()).put("password", password).put("name", displayName.trim())
                                 val result = withContext(Dispatchers.IO) { postJson(endpoint.trimEnd('/'), "/api/auth/register", body) }
                                 accountStatus = result.optString("message", "تحقق من بريدك الإلكتروني.")
                             } catch (e: Exception) {
@@ -96,7 +96,7 @@ private fun IMDApp() {
                                     mfaChallenge = result.optString("challenge_token")
                                     accountStatus = "أدخل رمز تطبيق المصادقة ثم اضغط تسجيل الدخول مرة أخرى."
                                 } else {
-                                    authToken = result.optString("access_token")
+                                    authToken = result.optString("token")
                                     mfaChallenge = ""
                                     accountStatus = "تم تسجيل الدخول بنجاح."
                                 }
@@ -190,7 +190,7 @@ private fun IMDApp() {
                         }
                     }
                 ) { Text(if (busy) "جارٍ الإرسال..." else "إرسال") }
-                Text("تأكيد البريد يتم عبر الرابط المرسل إلى بريدك. المصادقة الثنائية تستخدم تطبيق TOTP. هذه النسخة تتصل بخادم FastAPI؛ لا تنفذ استدلالاً محلياً على الهاتف بعد.", style = MaterialTheme.typography.bodySmall)
+                Text("هذه النسخة تتصل بخادم FastAPI ونموذج Ollama المحلي. يلزم تشغيل الخادم والنموذج لإجراء المحادثة.", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
@@ -237,6 +237,6 @@ private fun sendChat(baseUrl: String, message: String, bearer: String): String {
             val detail = try { JSONObject(body).optString("detail", body) } catch (_: Exception) { body }
             throw IllegalStateException("HTTP $code: $detail")
         }
-        return JSONObject(body).optString("reply", body)
+        return JSONObject(body).optString("answer", body)
     } finally { connection.disconnect() }
 }
