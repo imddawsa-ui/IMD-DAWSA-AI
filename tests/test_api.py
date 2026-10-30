@@ -44,6 +44,22 @@ def register_verified(client, sent_tokens, email, name):
     return {"Authorization": "Bearer " + login.json()["access_token"]}, user
 
 
+def test_cors_allows_social_profile_patch(monkeypatch):
+    monkeypatch.setattr(main.settings, "cors_origins", ("https://imddawsa-ui.github.io",))
+    with TestClient(app) as client:
+        response = client.options(
+            "/api/social/profile",
+            headers={
+                "Origin": "https://imddawsa-ui.github.io",
+                "Access-Control-Request-Method": "PATCH",
+                "Access-Control-Request-Headers": "authorization,content-type",
+            },
+        )
+        assert response.status_code == 200
+        assert response.headers["access-control-allow-origin"] == "https://imddawsa-ui.github.io"
+        assert "PATCH" in response.headers["access-control-allow-methods"]
+
+
 def test_health_and_history_endpoints():
     with TestClient(app) as client:
         assert client.get("/api/health").status_code == 200
