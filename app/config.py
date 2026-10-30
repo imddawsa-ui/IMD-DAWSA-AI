@@ -21,6 +21,10 @@ class Settings:
     api_access_token: str = os.getenv("API_ACCESS_TOKEN", "")
     auth_secret_key: str = os.getenv("AUTH_SECRET_KEY", "")
     auth_token_ttl_seconds: int = int(os.getenv("AUTH_TOKEN_TTL_SECONDS", "86400"))
+    resend_api_key: str = os.getenv("RESEND_API_KEY", "")
+    email_from: str = os.getenv("EMAIL_FROM", "")
+    api_public_url: str = os.getenv("API_PUBLIC_URL", "http://127.0.0.1:8000")
+    email_verification_ttl_seconds: int = int(os.getenv("EMAIL_VERIFICATION_TTL_SECONDS", "900"))
     max_message_chars: int = int(os.getenv("MAX_MESSAGE_CHARS", "12000"))
     cors_origins: tuple[str, ...] = tuple(
         origin.strip()
