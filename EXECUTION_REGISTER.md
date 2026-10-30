@@ -352,3 +352,43 @@ The first implementation slice added:
 - Tests for disabled translation configuration and invalid locale input.
 
 This is a provider integration foundation, **not an active universal translation service**. No provider has been configured, and Android integration remains outstanding. No language-coverage promise is made until the live engine's catalog and quality have been verified.
+
+
+## Enterprise engineering execution baseline — 2026-10-30
+
+This section is the current evidence-backed status and supersedes older status rows that conflict with it.
+
+### Current approved delivery
+- Budget: USD 0; free/open-source only.
+- Clients: Web/PWA and Android.
+- Scope: all NILE ONE HUMAN modules in dependency-ordered phases.
+- Standard: no feature is marked complete based only on code presence. Require automated tests and appropriate runtime validation.
+
+### Current verified CI evidence
+- Workflow run [41104323098](https://github.com/imddawsa-ui/IMD-DAWSA-AI/actions/runs/41104323098) completed successfully with three jobs: backend-tests, web-client, android-apk.
+- This proves the source at commit `3d43f7fbc269c5fc6001a98b7ce915825b4fa4bd` passed those CI jobs only.
+- Android language preference persistence was committed later as `4f95ddfc1a68cf78952b919832d06718ec86f25a`; run 41104866101 was still queued/in progress when last checked.
+- The newest backend security changes are commits `fb5ee0a4d5419eb50366d25d7b124001156e3896` and `80dd7f84f49a76f9b66c0a73d783c81edd344ce0`. Their CI is pending; do not call them tested yet.
+
+### Engineering improvements in latest commits
+- Middleware adds a per-request correlation ID (`X-Request-ID`), `no-store` caching for auth endpoints, and bounded cleanup of the in-process rate-limit key map.
+- Added regression tests for request ID headers and sensitive auth response caching.
+- These controls remain process-local. They do not replace a shared distributed limiter, audit pipeline, WAF or production security review.
+
+### Current product boundaries
+- Existing backend APIs include account/authentication, social feed/posts/follows/likes/comments, notifications, direct messages, marketplace listings/enquiries, AI chat and conversation history.
+- These APIs do not prove complete end-user flows across both clients.
+- Translation routes and Web preference UI exist, but no translation engine is configured by default. Full locale catalogs and Android translation are not complete.
+- Android is an early network client; no physical-device smoke test is recorded.
+- Static Web/PWA validation passes in CI; public deployment and production backend availability are not verified.
+- Payments, wallet, trading execution, external social publishing, voice/video calls, enterprise, and other provider-dependent services remain planned or blocked until compliant free services and required approvals exist.
+
+### Release gates
+1. Green backend, web and Android CI on the latest commit.
+2. Automated integration tests for complete workflows and tenant/user data isolation.
+3. Real-browser Web/PWA test and physical Android install/smoke test.
+4. Verified public deployment with TLS, secrets, database persistence, backup/restore and monitoring.
+5. Security review and accessibility/localization review.
+6. Release APK signed using owner-controlled release key; never commit private signing material.
+
+No public production release or 100% completion claim is made until these gates pass.
