@@ -532,6 +532,47 @@ async def my_marketplace_enquiries(authorization: str | None = Header(default=No
     return {"items": [dict(row) for row in rows]}
 
 
+@app.get("/api/marketplace/my-listings")
+async def my_marketplace_listings(
+    limit: int = 50,
+    authorization: str | None = Header(default=None),
+):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    with connect() as db:
+        rows = db.execute("""
+            SELECT l.id, l.title, l.description, l.category, l.price_amount, l.currency,
+                   l.status, l.created_at,
+                   (SELECT COUNT(*) FROM marketplace_enquiries e WHERE e.listing_id = l.id) AS enquiry_count
+            FROM marketplace_listings l
+            WHERE l.seller_id = ?
+            ORDER BY l.id DESC LIMIT ?
+        """, (user["id"], max(1, min(limit, 100)))).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
+@app.get("/api/marketplace/seller-enquiries")
+async def seller_marketplace_enquiries(
+    limit: int = 50,
+    authorization: str | None = Header(default=None),
+):
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    with connect() as db:
+        rows = db.execute("""
+            SELECT e.id, e.listing_id, e.buyer_id, e.message, e.created_at,
+                   l.title AS listing_title, b.display_name AS buyer_name, b.handle AS buyer_handle
+            FROM marketplace_enquiries e
+            JOIN marketplace_listings l ON l.id = e.listing_id
+            JOIN users b ON b.id = e.buyer_id
+            WHERE l.seller_id = ?
+            ORDER BY e.id DESC LIMIT ?
+        """, (user["id"], max(1, min(limit, 100)))).fetchall()
+    return {"items": [dict(row) for row in rows]}
+
+
 @app.post("/api/social/messages/{other_user_id}", status_code=201)
 async def send_direct_message(
     other_user_id: int,
