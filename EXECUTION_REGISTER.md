@@ -72,3 +72,18 @@ This file is the source of truth for delivery status. Update it whenever a featu
 - Signing keys and store/developer account approvals for distribution.
 
 Never request passwords, one-time codes or private signing keys in chat. Use secure provider authorization and local secret storage.
+
+
+## Additional workstreams added to the master scope
+
+| Workstream | Status | Key dependencies / next action |
+|---|---|---|
+| Embedded mini-apps and service directory | PLANNED | Define app manifest, sandbox, permission model and review process |
+| Forex/market information and education | PLANNED | Select licensed market-data sources; build watchlists/charts/alerts and disclaimers |
+| Live trading / broker connectivity | BLOCKED | Requires eligible regulated provider, official API, explicit authorization and compliance review |
+| Enterprise workspaces and organization AI | PLANNED | Tenant isolation, roles, audit, SSO and organization administration |
+| Audio/video calls and live streaming | PLANNED | Select real-time media infrastructure; test bandwidth, device support and consent |
+| Maps, bookings and logistics | PLANNED | Location permissions and verified booking/delivery partners |
+| Help center and customer support | PLANNED | Ticketing, escalation, dispute and abuse-report workflows |
+| Developer platform and extension SDK | PLANNED | API documentation, sandbox, scopes, webhooks and extension isolation |
+| Subscriptions and monetization | PLANNED | Payment-provider eligibility, billing, taxes and entitlement system |
