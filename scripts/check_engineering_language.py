@@ -2,10 +2,9 @@
 """Reject non-English text in engineering files outside the temporary UI localization allowlist."""
 from pathlib import Path
 import re
-import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-ARABIC = re.compile(r'[\\u0600-\\u06FF]')
+ARABIC = re.compile(r'[\u0600-\u06FF]')
 EXTENSIONS = {'.md', '.py', '.kt', '.js', '.ts', '.tsx', '.sql', '.toml', '.yml', '.yaml', '.bat', '.ps1'}
 EXCLUDED_PARTS = {'.git', '.gradle', 'build', '__pycache__', '.venv'}
 TRANSITIONAL_LOCALIZATION_FILES = {
@@ -14,6 +13,7 @@ TRANSITIONAL_LOCALIZATION_FILES = {
     'web/index.html',
     'static/index.html',
 }
+
 
 def main() -> int:
     violations = []
@@ -35,10 +35,11 @@ def main() -> int:
                 violations.append(f'{relative}:{number}: Arabic text found in engineering content')
     if violations:
         print('Engineering language check failed:')
-        print('\\n'.join(violations))
+        print('\n'.join(violations))
         return 1
     print('Engineering language check passed (temporary UI localization files are explicitly allowlisted).')
     return 0
+
 
 if __name__ == '__main__':
     raise SystemExit(main())
