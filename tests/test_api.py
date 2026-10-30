@@ -9,6 +9,7 @@ from app.auth import hash_password, verify_password, issue_access_token, read_ac
 
 
 def configure_email(monkeypatch):
+    main._rate_buckets.clear()
     monkeypatch.setattr(main.settings, "auth_secret_key", "test-secret-key-that-is-at-least-32-chars")
     monkeypatch.setattr(main.settings, "resend_api_key", "re_test_key")
     monkeypatch.setattr(main.settings, "email_from", "IMD DAWSA AI <verify@example.com>")
