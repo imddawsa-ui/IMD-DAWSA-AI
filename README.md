@@ -9,6 +9,7 @@ Privacy-first AI assistant and unified platform foundation for Windows 11, 8 GB 
 - Email/password registration with Resend email verification, PBKDF2 password hashing and signed expiring bearer sessions.
 - Optional TOTP multi-factor authentication, encrypted authenticator secrets and one-time recovery codes.
 - Social profiles, public/follower/private text posts, feed, follows, likes and comments.
+- Verified-user discovery search by display name/handle, with follow-state and follow/unfollow controls.
 - Authenticated one-to-one private messaging API.
 - Marketplace seller dashboard APIs for owned listings and buyer enquiries, with a basic Web seller inbox.
 - User-scoped conversation history for authenticated accounts.
@@ -33,7 +34,7 @@ Account endpoints:
 - Authenticated chat, social, messaging and conversation endpoints require the bearer header when account security is enabled.
 
 Social API:
-- `GET /api/social/feed`, `GET /api/social/users/{id}`, `PATCH /api/social/profile`.
+- `GET /api/social/feed`, `GET /api/social/users?q=...`, `GET /api/social/users/{id}`, `PATCH /api/social/profile`.
 - `POST /api/social/posts`, `POST /api/social/users/{id}/follow`, `DELETE /api/social/users/{id}/follow`.
 - `POST /api/social/posts/{id}/like`, `POST/GET /api/social/posts/{id}/comments`.
 - `POST/GET /api/social/messages/{user_id}` — participant-scoped private direct messages.
