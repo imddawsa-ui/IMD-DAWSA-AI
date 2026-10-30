@@ -10,6 +10,7 @@ Privacy-first AI assistant and unified platform foundation for Windows 11, 8 GB 
 - Optional TOTP multi-factor authentication, encrypted authenticator secrets and one-time recovery codes.
 - Social profiles, public/follower/private text posts, feed, follows, likes and comments.
 - Verified-user discovery search by display name/handle, with follow-state and follow/unfollow controls.
+- In-app notifications for follows, likes, comments, direct messages and marketplace enquiries, with recipient-scoped read controls.
 - Authenticated one-to-one private messaging API.
 - Marketplace seller dashboard APIs for owned listings and buyer enquiries, with a basic Web seller inbox.
 - User-scoped conversation history for authenticated accounts.
