@@ -21,7 +21,7 @@ if errorlevel 1 exit /b 1
 if errorlevel 1 exit /b 1
 if not exist .env copy .env.example .env
 if errorlevel 1 exit /b 1
-.venv\Scripts\python.exe -c "import secrets,pathlib,re; p=pathlib.Path('.env'); s=p.read_text(encoding='utf-8'); key=secrets.token_urlsafe(48); s=re.sub(r'(?m)^AUTH_SECRET_KEY=.*$', 'AUTH_SECRET_KEY='+key, s) if re.search(r'(?m)^AUTH_SECRET_KEY=.*$', s) and not re.search(r'(?m)^AUTH_SECRET_KEY=.{32,}$', s) else s; p.write_text(s,encoding='utf-8')"
+.venv\Scripts\python.exe scripts\configure_local.py
 if errorlevel 1 exit /b 1
 if not exist data mkdir data
 echo.
