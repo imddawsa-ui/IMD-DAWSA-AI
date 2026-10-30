@@ -102,3 +102,37 @@ def test_social_profile_posts_follow_likes_comments(monkeypatch, tmp_path):
         assert comment.status_code == 201
         assert len(client.get(f"/api/social/posts/{post_id}/comments").json()["items"]) == 1
         assert client.get(f"/api/social/users/{alice['id']}").json()["user"]["follower_count"] == 1
+
+
+def test_security_headers_and_authenticated_chat_requirement(monkeypatch, tmp_path):
+    monkeypatch.setattr(main.settings, "auth_secret_key", "test-secret-key-that-is-at-least-32-chars")
+    monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "security-test.sqlite3"))
+    with TestClient(app) as client:
+        health = client.get("/api/health")
+        assert health.status_code == 200
+        assert health.headers["x-content-type-options"] == "nosniff"
+        assert health.headers["x-frame-options"] == "DENY"
+        assert client.post("/api/chat", json={"message": "private"}).status_code == 401
+        assert client.get("/api/conversations").status_code == 401
+
+
+def test_private_post_comments_are_not_visible_to_other_users(monkeypatch, tmp_path):
+    monkeypatch.setattr(main.settings, "auth_secret_key", "test-secret-key-that-is-at-least-32-chars")
+    monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "privacy-test.sqlite3"))
+    with TestClient(app) as client:
+        def register(email, name):
+            response = client.post("/api/auth/register", json={
+                "email": email, "password": "A-strong-password-123", "display_name": name
+            })
+            return {"Authorization": "Bearer " + response.json()["access_token"]}
+        owner = register("owner@example.com", "Owner")
+        stranger = register("stranger@example.com", "Stranger")
+        post = client.post("/api/social/posts", headers=owner, json={
+            "content": "Private note", "visibility": "private"
+        }).json()
+        post_id = post["id"]
+        assert client.get(f"/api/social/posts/{post_id}/comments", headers=stranger).status_code == 404
+        assert client.post(f"/api/social/posts/{post_id}/comments", headers=stranger, json={
+            "content": "Can I see this?"
+        }).status_code == 404
+        assert client.get(f"/api/social/posts/{post_id}/comments", headers=owner).status_code == 200
