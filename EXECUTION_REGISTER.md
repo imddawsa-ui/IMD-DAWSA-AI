@@ -18,7 +18,7 @@ This file is the source of truth for delivery status. Update it whenever a featu
 | Local Ollama chat | IMPLEMENTED | Local provider configured; hardware performance not benchmarked | Add provider health, model lifecycle and offline test |
 | SQLite conversation storage | IMPLEMENTED | Additive user_id migration and user-scoped reads/writes implemented | Add migration framework, export and deletion controls |
 | Basic Web chat UI | IMPLEMENTED | Arabic PWA chat plus account and social feed/profile/post/follow/like/comment UI; browser/device validation pending | Add end-user messaging, accessibility and end-to-end tests |
-| Windows setup scripts | IMPLEMENTED | Batch setup/start/model scripts exist | Add desktop shell, diagnostics and packaging |
+| Windows setup scripts | IN_PROGRESS | Installer now creates venv, installs requirements and generates local auth secret; startup validates config and binds localhost; Ollama setup checks prerequisites. Not yet executed on user's PC. | Validate on Windows 11/8 GB device and package desktop launcher |
 | Windows Master Studio | PLANNED | No full desktop control application yet | Design and implement project dashboard |
 | Android client | IMPLEMENTED | Early network client only | Complete navigation, auth and device testing |
 | Android on-device offline AI | PLANNED | Not implemented | Select mobile runtime and test on target phones |
@@ -467,3 +467,14 @@ No row above is marked TESTED or VERIFIED until code, tests and the correspondin
 - The new scope is approved and documented; implementation remains PLANNED unless explicitly stated otherwise in the table above.
 - Existing translation endpoints require a configured LibreTranslate-compatible provider; automatic global translation is not yet active.
 - Existing CI validates backend, Web and Android debug build, but a green debug build is not a signed production release or physical-device verification.
+
+
+## Zero-cost local-first execution update — 2026-10-30
+
+- Added ZERO_COST_DEPLOYMENT.md defining the USD 0 operating baseline and honest free-tier limitations.
+- Hardened install_windows.bat to create a Python environment, install requirements, create local data storage and generate a unique local auth secret when absent.
+- Hardened start_windows.bat to validate local configuration and bind the service only to 127.0.0.1.
+- Hardened pull_model.bat with Ollama prerequisite checks and low-memory expectations.
+- Updated README.md with the zero-cost local setup flow.
+- These scripts are committed but have not been run on the user's Windows computer. No physical Android device test, production deployment, public HTTPS endpoint or all-language translation verification is claimed.
+- Account registration still requires a configured email provider and HTTPS public URL. The installer intentionally does not weaken email verification or create an insecure bypass.
