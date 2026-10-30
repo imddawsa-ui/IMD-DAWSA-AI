@@ -258,3 +258,26 @@ Therefore, at this commit the following slices are now **TESTED** by CI: bounded
 ### Safe migration rule
 
 The existing FastAPI/Ollama backend remains the functional application backend until Cloudflare modules have feature parity and end-to-end tests. The Worker health shell is not a replacement for authentication, social, messaging, marketplace, AI or other product APIs. Never represent unimplemented Worker routes as complete.
+
+
+## Android-only product scope selected — 2026-10-30
+
+The user confirmed that the complete product should be delivered as **Android only**. The master plan now reflects this decision.
+
+- Android Kotlin/Compose is the only end-user client target for the first release.
+- A separate Web/PWA or Windows desktop client is no longer a first-release requirement.
+- Backend, database, storage, AI provider and notification services remain infrastructure dependencies for the Android app.
+- Existing Windows/Ollama scripts may remain as an optional local AI server/development setup; they do not mean Android has on-device offline AI.
+- Updated `.github/workflows/ci.yml`: removed the separate Web-client check job and retained Python backend tests plus Android debug APK build and artifact upload (30-day retention).
+- CI workflow change committed as `978ee1920e425315d901891ac3e3174c38923d26`.
+- Android-only master plan committed as `666b0c690798ee1005d0a9d91d0f1744ed100e0a`.
+
+### Remaining Android delivery gates
+1. Complete Android navigation and integrate all existing APIs: authentication, chat/history, social feed/profile/follow, direct messages, marketplace and notifications.
+2. Add the not-yet-implemented service modules (media, groups, communities, payment/orders, forex paper trading, mini-app catalog, enterprise/admin) with real APIs and tests before marking available.
+3. Add secure persistent session storage using Android Keystore, session revocation/logout and HTTPS-only production API configuration.
+4. Add Arabic/English localization, RTL/LTR checks, offline-safe cache/queue, accessibility and low-memory handling.
+5. Add physical-device install and end-to-end tests.
+6. Produce a signed release APK/AAB only after protected signing configuration and explicit release authorization are in place.
+
+**Current status:** Android-only scope is selected and CI is configured to build a debug APK. This is not a completed Android Super App and does not prove that a current APK artifact is available until the updated workflow finishes successfully.
