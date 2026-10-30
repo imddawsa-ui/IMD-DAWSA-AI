@@ -2,15 +2,27 @@ import sqlite3
 from pathlib import Path
 from .config import settings
 
+
 def connect():
     path = Path(settings.database_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     db = sqlite3.connect(path)
     db.row_factory = sqlite3.Row
+    db.execute("PRAGMA foreign_keys = ON")
     return db
+
 
 def initialize():
     with connect() as db:
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+                password_hash TEXT NOT NULL,
+                display_name TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         db.execute("""
             CREATE TABLE IF NOT EXISTS conversations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,15 +31,53 @@ def initialize():
                 created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        columns = {row["name"] for row in db.execute("PRAGMA table_info(conversations)").fetchall()}
+        if "user_id" not in columns:
+            db.execute("ALTER TABLE conversations ADD COLUMN user_id INTEGER REFERENCES users(id) ON DELETE CASCADE")
+        db.execute("CREATE INDEX IF NOT EXISTS idx_conversations_user_id_id ON conversations(user_id, id DESC)")
 
-def list_conversations(limit: int = 50):
+
+def create_user(email: str, password_hash: str, display_name: str):
+    with connect() as db:
+        cursor = db.execute(
+            "INSERT INTO users (email, password_hash, display_name) VALUES (?, ?, ?)",
+            (email.strip().lower(), password_hash, display_name.strip()),
+        )
+        user_id = cursor.lastrowid
+    return get_user(user_id)
+
+
+def get_user_by_email(email: str):
+    with connect() as db:
+        row = db.execute("SELECT * FROM users WHERE email = ?", (email.strip().lower(),)).fetchone()
+    return dict(row) if row else None
+
+
+def get_user(user_id: int):
+    with connect() as db:
+        row = db.execute(
+            "SELECT id, email, display_name, created_at FROM users WHERE id = ?", (user_id,)
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def save_conversation(user_message: str, assistant_message: str, user_id: int | None = None):
+    with connect() as db:
+        db.execute(
+            "INSERT INTO conversations (user_id, user_message, assistant_message) VALUES (?, ?, ?)",
+            (user_id, user_message, assistant_message),
+        )
+
+
+def list_conversations(limit: int = 50, user_id: int | None = None):
     with connect() as db:
         rows = db.execute(
-            "SELECT id, user_message, assistant_message, created_at FROM conversations ORDER BY id DESC LIMIT ?",
-            (limit,),
+            "SELECT id, user_message, assistant_message, created_at FROM conversations WHERE user_id IS ? ORDER BY id DESC LIMIT ?",
+            (user_id, limit),
         ).fetchall()
     return [dict(row) for row in rows]
 
-def clear_conversations():
+
+def clear_conversations(user_id: int | None = None):
     with connect() as db:
-        db.execute("DELETE FROM conversations")
+        db.execute("DELETE FROM conversations WHERE user_id IS ?", (user_id,))
