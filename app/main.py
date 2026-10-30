@@ -644,7 +644,8 @@ async def chat(
     if len(message) > settings.max_message_chars:
         raise HTTPException(status_code=413, detail="Message is too long")
     try:
-        reply = await generate_reply(message)
+        history = list_conversations(limit=8, user_id=user["id"] if user else None)
+        reply = await generate_reply(message, history=list(reversed(history)))
     except ModelUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     save_conversation(message, reply, user["id"] if user else None)
