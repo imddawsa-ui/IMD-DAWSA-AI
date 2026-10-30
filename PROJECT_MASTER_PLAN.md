@@ -344,3 +344,28 @@ These modules extend the initial scope so the platform can grow into a broad sup
 - Universal Search and recommendations must honor the same access-control rules as the underlying services.
 - Wallet transactions require separate financial authorization and cannot be approved merely by general agent permission.
 - Plugins receive minimum scopes and can be disconnected/revoked by the user.
+
+
+## 15. Android-only delivery decision — 2026-10-30
+
+The user has explicitly selected **Android only** as the end-user product. This decision supersedes the earlier multi-client delivery target for the first release.
+
+### Delivery scope
+- Primary and only end-user client for this release: native Android application (Kotlin + Jetpack Compose).
+- Do not build or maintain a separate user-facing Web, PWA or Windows desktop client as a release requirement.
+- Keep the backend/API and operational cloud services as infrastructure required by Android; they are not separate client deliverables.
+- Preserve the existing Windows/Ollama developer scripts only as an optional local AI server/development environment. The Android app is not yet a fully offline on-device model runtime.
+- The Android app must provide the platform modules through one consistent navigation and permission model. Each module is only called complete after its API, UI, validation, error/loading/empty states, tests and security checks work together.
+
+### Android release gates
+- Complete navigation and implement real UI/API integration for AI chat, identity/security, social, messaging, marketplace, notifications, services, forex education/market analysis/paper trading, mini-app catalogue, workspace and administration.
+- Use Android Keystore-backed token/session protection, safe HTTPS production configuration, password masking, logout/session lifecycle and clear permission prompts.
+- Support Arabic RTL and English LTR, accessible layouts, low-memory devices and intermittent connectivity.
+- Add offline queue/cache where safe; do not claim offline AI unless a local Android inference runtime and model are actually integrated and tested on target hardware.
+- Build debug APK automatically in CI; signed release APK/AAB requires protected signing secrets and owner-controlled release authorization.
+- Test install, upgrade, login, chat, social, messaging, marketplace and failure recovery on a physical Android phone before production release.
+
+### Out of scope for first client release
+- Separate public Web/PWA user app.
+- Separate Windows end-user desktop app.
+- These can be reconsidered later, but must not divert work from the Android deliverable.
