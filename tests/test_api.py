@@ -126,7 +126,7 @@ def test_register_verify_login_and_user_scoped_history(monkeypatch, tmp_path):
     sent = configure_email(monkeypatch)
     monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "auth-test.sqlite3"))
 
-    async def fake_reply(message):
+    async def fake_reply(message, history=None):
         return "Private answer"
     monkeypatch.setattr(main, "generate_reply", fake_reply)
     with TestClient(app) as client:
