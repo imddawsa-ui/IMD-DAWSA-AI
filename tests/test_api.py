@@ -119,7 +119,7 @@ def test_register_verify_login_and_user_scoped_history(monkeypatch, tmp_path):
         assert client.get("/api/auth/me", headers=headers).status_code == 200
         assert client.post("/api/chat", json={"message": "secret"}, headers=headers).status_code == 200
         assert len(client.get("/api/conversations", headers=headers).json()["items"]) == 1
-        assert client.get("/api/conversations").json()["items"] == []
+        assert client.get("/api/conversations").status_code == 401
         assert client.post("/api/auth/login", json={
             "email": "person@example.com", "password": "wrong-password"
         }).status_code == 401
