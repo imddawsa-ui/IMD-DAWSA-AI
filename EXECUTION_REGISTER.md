@@ -175,3 +175,25 @@ This section supersedes any older row above that conflicts with the current repo
 8. Add finance/forex information using licensed data; keep live trading blocked until all safeguards and provider approvals exist.
 9. Configure staging infrastructure and verify the entire stack end-to-end.
 10. Complete security, backup/restore, performance, accessibility and release checks before production launch.
+
+## Repository and client security findings — 2026-10-30
+
+These are direct observations from the current default-branch source and repository metadata.
+
+1. **Repository visibility is PUBLIC.** GitHub repository metadata currently reports `visibility=public`. Source files and project documentation are therefore publicly readable. No private keys were found in this source inspection, but this is not a secret scan. If private source visibility is required, an owner must change it in GitHub Settings → General → Danger Zone → Change repository visibility. The available connector cannot change visibility.
+2. **Android password input is currently rendered as ordinary text.** In `MainActivity.kt`, the password field does not set a password visual transformation. Fix before real account use.
+3. **Android endpoint defaults to emulator-only HTTP.** `http://10.0.2.2:8000` is an Android emulator host bridge, not a production API endpoint. The app needs HTTPS configuration and a safe real-device setup.
+4. **Android session handling is incomplete.** The access token is held in Compose in-memory state; there is no secure persistent session vault, server-side logout/revocation, or device/session management.
+5. **Android client feature coverage is far behind the Web/API.** The current single activity covers account setup/login/MFA and chat; it does not provide social feed, DMs, marketplace, media, notifications, payments or the rest of the planned platform.
+6. **Web account session is browser sessionStorage.** It is scoped to the browser tab/session and is not a complete device/session lifecycle. Production hardening should consider secure cookie/session architecture and CSRF protections where applicable.
+7. **The main app API currently exposes a small subset of the product map.** The verified route inventory includes health/readiness, account registration/login/me, chat/history, basic social profile/feed/posts/follows/likes/comments, one-to-one text messages, and marketplace listings/enquiries. No route inventory was found for groups, channels, events, uploads, payments, checkout/orders, forex feeds, broker orders, voice/video calls, notifications, admin moderation, CRM, learning/jobs or plugin marketplace.
+8. **No live release proof was established in this audit.** The repository has a Pages workflow, but this inspection did not establish a successful current deployment. The backend also has no confirmed production host/domain. CI status APIs returned no status entries for the inspected documentation and Pages commits, so do not treat them as proof of current tests.
+9. **The source-level audit is not a complete security review.** A dedicated secret/dependency scan, threat model, authorization test suite, penetration test, backup restore test and production load test remain outstanding.
+
+### Immediate remediation priority
+
+- Change repository visibility to Private if public source exposure is not intended.
+- Correct Android password masking and enforce HTTPS outside local emulator development.
+- Complete Android token storage/session lifecycle and server-side logout/revocation.
+- Run and record the latest Python, Android and Web CI results from the current main head.
+- Build missing API modules before presenting unimplemented product areas as available.
