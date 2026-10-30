@@ -5,7 +5,8 @@ Privacy-first AI assistant and unified platform foundation for Windows 11, 8 GB 
 ## Implemented foundation
 - Multilingual Web/PWA client and early Android network client. User-interface localization is separate from the English-only engineering codebase.
 - FastAPI service with local Ollama and optional OpenAI-compatible provider.
-- SQLite persistence and health/readiness endpoints.
+- SQLite persistence, health/readiness endpoints and authenticated host resource diagnostics (`/api/system/resources`).
+- Encrypted SQLite backup, integrity verification and guarded restore utilities (operator-driven; scheduling and restore drills are pending).
 - Email/password registration with Resend email verification, PBKDF2 password hashing and signed expiring bearer sessions.
 - Optional TOTP multi-factor authentication, encrypted authenticator secrets and one-time recovery codes.
 - Social profiles, public/follower/private text posts, feed, follows, likes and comments.
