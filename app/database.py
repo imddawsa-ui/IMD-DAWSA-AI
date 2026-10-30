@@ -42,6 +42,16 @@ def initialize():
         if "bio" not in user_columns:
             db.execute("ALTER TABLE users ADD COLUMN bio TEXT NOT NULL DEFAULT ''")
         db.execute("UPDATE users SET handle = 'user' || id WHERE handle IS NULL OR handle = ''")
+        # Repair duplicate legacy handles before enforcing uniqueness on upgraded databases.
+        db.execute("""
+            UPDATE users
+            SET handle = 'user' || id
+            WHERE id IN (
+                SELECT id FROM users
+                GROUP BY handle HAVING COUNT(*) > 1
+            )
+        """)
+        db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_handle_unique ON users(handle)")
         db.execute("""
             CREATE TABLE IF NOT EXISTS posts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
