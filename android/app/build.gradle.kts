@@ -8,7 +8,14 @@ android {
     namespace = "com.imddawsa.ai"
     compileSdk = 35
 
-    compileOptions {\n        sourceCompatibility = JavaVersion.VERSION_17\n        targetCompatibility = JavaVersion.VERSION_17\n    }\n\n    kotlinOptions { jvmTarget = "17" }\n\n    defaultConfig {
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions { jvmTarget = "17" }
+
+    defaultConfig {
         applicationId = "com.imddawsa.ai"
         minSdk = 26
         targetSdk = 35
