@@ -317,3 +317,38 @@ The current approved scope is **USD 0, free/open-source tools only, Web + Androi
 - Cloudflare free-tier products have quotas and acceptable-use terms; a connected account or created resource is not proof of a production-ready free deployment.
 - Local Ollama is the baseline for zero-cost AI. Any cloud provider/API must remain optional and disabled unless its no-cost terms and quota are confirmed.
 - No paid services may be enabled without a new explicit owner decision.
+ 
+
+## CURRENT APPROVED EXECUTION STATE — 2026-10-30 (supersedes contradictory historical entries above)
+
+**Owner-approved scope:** USD 0; free/open-source tools only; Web/PWA + Android; all NILE ONE HUMAN modules delivered in phases. The latest owner instruction requires real working functionality and forbids claiming completion before testing. The latest owner decision supersedes the earlier Android-only entry above.
+
+| Area | Evidence-backed status | Current limitation / next gate |
+|---|---|---|
+| Web + Android scope | VERIFIED as an owner decision | Both clients remain in scope; neither is declared a complete Super App |
+| Backend + Android baseline | TESTED on earlier commit | Historical CI run 41057968296 passed backend tests and Android debug build; not proof of current source or phone runtime |
+| Web/PWA static validation | TESTED on commit b91dbfbccf1ca2238297192af13ec512801ed750 | Workflow run 41104026314 reports web-client and backend jobs successful; Android job was still in progress when checked |
+| Translation API routes/config | IMPLEMENTED | Optional LibreTranslate-compatible endpoint; disabled until a trusted provider URL is configured |
+| Web language preference UI | IMPLEMENTED | Device-language detection and manual preference; interface text is not yet fully localized across every screen |
+| Web AI reply translation integration | IMPLEMENTED, NOT VERIFIED | Depends on configured translation provider; provider unavailable by default |
+| Translation endpoint regression tests | IN_PROGRESS | Added disabled-provider and invalid-language tests in commit 1cc969d71b2db021dd79c851fbc1a41bd358cb61; its Actions run 41104036936 was queued at last check |
+| Android language preference/translation | PLANNED | No Android localization/translation code committed yet; must implement and build-test |
+| Full multilingual interface | PLANNED | Requires complete string catalogs on Web and Android, locale persistence, RTL/LTR, date/number formatting and accessibility review |
+| Global translation coverage | BLOCKED pending engine | No engine or provider is configured. "All languages" cannot be claimed until supported language pairs are enumerated and tested |
+| Public Web deployment | BLOCKED pending deployment verification | Static CI validation is not a public deployment or end-to-end check |
+| Public API/backend | BLOCKED | No continuously available, production-ready, zero-cost backend is verified |
+| Android physical device | BLOCKED | No install/smoke-test evidence on owner's actual phone |
+| Production security and recovery | BLOCKED | Session revocation, reset flows, shared rate limiting, audit, backup/restore and external security checks remain |
+
+### Current canonical rule
+Use `PROJECT_MASTER_PLAN.md` sections 1–10, including the approved Web + Android decision and Global language and translation requirements, as the current scope. Older Android-only statements above are historical and superseded. Keep all future status changes evidence-backed. Do not mark a feature TESTED or VERIFIED from code presence alone.
+
+### Translation implementation detail
+The first implementation slice added:
+- Optional environment configuration: `TRANSLATION_API_URL`, `TRANSLATION_API_KEY`, `TRANSLATION_TIMEOUT_SECONDS`.
+- `GET /api/i18n/languages` and `POST /api/i18n/translate`.
+- A Web language selector with automatic device-language detection and a manual locale choice.
+- Web AI reply translation call with safe fallback to the original response.
+- Tests for disabled translation configuration and invalid locale input.
+
+This is a provider integration foundation, **not an active universal translation service**. No provider has been configured, and Android integration remains outstanding. No language-coverage promise is made until the live engine's catalog and quality have been verified.
