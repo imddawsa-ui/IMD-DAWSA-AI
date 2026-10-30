@@ -1,0 +1,8 @@
+name = "imd-dawsa-ai-api"
+main = "worker.js"
+compatibility_date = "2026-10-30"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "imd-dawsa-ai"
+database_id = "1cceda46-2d87-47b3-ab87-68e84c47b9eb"
