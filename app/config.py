@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-@dataclass(frozen=True)
+@dataclass
 class Settings:
     app_name: str = os.getenv("APP_NAME", "IMD DAWSA AI")
     host: str = os.getenv("HOST", "127.0.0.1")
