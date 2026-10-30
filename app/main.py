@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from .config import settings
-from .database import initialize, connect
+from .database import initialize, connect, list_conversations, clear_conversations
 from .llm import generate_reply, ModelUnavailable
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -16,11 +16,11 @@ async def lifespan(app: FastAPI):
     initialize()
     yield
 
-app = FastAPI(title=settings.app_name, version="0.1.0", lifespan=lifespan)
+app = FastAPI(title=settings.app_name, version="0.3.0", lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 
 class ChatRequest(BaseModel):
-    message: str = Field(min_length=1)
+    message: str = Field(min_length=1, max_length=12000)
 
 def check_access(token: str | None):
     if settings.api_access_token and not secrets.compare_digest(token or "", settings.api_access_token):
@@ -32,18 +32,21 @@ async def home():
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "app": settings.app_name, "version": "0.1.0"}
+    return {"status": "ok", "app": settings.app_name, "version": "0.3.0"}
 
 @app.get("/api/readiness")
 async def readiness():
+    if settings.ai_provider == "openai_compatible":
+        configured = bool(settings.cloud_api_key or settings.cloud_base_url)
+        return {"ready": configured, "provider": settings.ai_provider, "model": settings.cloud_model}
     import httpx
     try:
         async with httpx.AsyncClient(timeout=3) as client:
             r = await client.get(f"{settings.ollama_url}/api/tags")
             r.raise_for_status()
-        return {"ready": True, "model": settings.ollama_model}
+        return {"ready": True, "provider": "ollama", "model": settings.ollama_model}
     except httpx.HTTPError:
-        return {"ready": False, "model": settings.ollama_model, "detail": "Ollama is not reachable"}
+        return {"ready": False, "provider": "ollama", "model": settings.ollama_model, "detail": "Ollama is not reachable"}
 
 @app.post("/api/chat")
 async def chat(request: ChatRequest, x_api_token: str | None = Header(default=None)):
@@ -59,4 +62,15 @@ async def chat(request: ChatRequest, x_api_token: str | None = Header(default=No
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     with connect() as db:
         db.execute("INSERT INTO conversations (user_message, assistant_message) VALUES (?, ?)", (message, reply))
-    return {"reply": reply, "model": settings.ollama_model}
+    return {"reply": reply, "provider": settings.ai_provider, "model": settings.cloud_model if settings.ai_provider == "openai_compatible" else settings.ollama_model}
+
+@app.get("/api/conversations")
+async def conversations(limit: int = 50, x_api_token: str | None = Header(default=None)):
+    check_access(x_api_token)
+    return {"items": list_conversations(max(1, min(limit, 100)))}
+
+@app.delete("/api/conversations")
+async def delete_conversations(x_api_token: str | None = Header(default=None)):
+    check_access(x_api_token)
+    clear_conversations()
+    return {"deleted": True}
