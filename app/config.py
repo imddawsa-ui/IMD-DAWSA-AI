@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 @dataclass(frozen=True)
 class Settings:
     app_name: str = os.getenv("APP_NAME", "IMD DAWSA AI")
@@ -18,14 +19,17 @@ class Settings:
     cloud_api_key: str = os.getenv("CLOUD_API_KEY", "")
     database_path: str = os.getenv("DATABASE_PATH", "./data/imd_dawsa.sqlite3")
     api_access_token: str = os.getenv("API_ACCESS_TOKEN", "")
+    auth_secret_key: str = os.getenv("AUTH_SECRET_KEY", "")
+    auth_token_ttl_seconds: int = int(os.getenv("AUTH_TOKEN_TTL_SECONDS", "86400"))
     max_message_chars: int = int(os.getenv("MAX_MESSAGE_CHARS", "12000"))
     cors_origins: tuple[str, ...] = tuple(
         origin.strip()
         for origin in os.getenv(
             "CORS_ORIGINS",
-            "http://localhost:8000,http://127.0.0.1:8000,https://imddawsa-ui.github.io",
+            "http://localhost:8000,http://127.0.0.1:8000",
         ).split(",")
         if origin.strip()
     )
+
 
 settings = Settings()
