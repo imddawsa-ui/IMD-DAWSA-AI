@@ -316,6 +316,7 @@ function preferredLanguage(){
  return candidates.find(x=>commonLanguages.includes(x))||'en';
 }
 languageSelect.value=localStorage.getItem('imd_preferred_language')||'auto';
+{const initial=preferredLanguage();document.documentElement.lang=initial;document.documentElement.dir=['ar','fa','ur','ps'].includes(initial)?'rtl':'ltr';}
 languageSelect.addEventListener('change',()=>{
  localStorage.setItem('imd_preferred_language',languageSelect.value);
  const lang=preferredLanguage();
@@ -326,7 +327,7 @@ languageSelect.addEventListener('change',()=>{
 async function translateForDisplay(text){
  const target=preferredLanguage();
  const source=(navigator.language||'auto').split('-')[0];
- if(!text||target===source||target==='auto')return text;
+ if(!text||target==='auto')return text;
  const response=await fetch(base()+'/api/i18n/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text,source:'auto',target})});
  const data=await response.json();
  if(!response.ok)throw new Error(data.detail||'Translation unavailable');
