@@ -128,6 +128,25 @@ def test_register_verify_login_and_user_scoped_history(monkeypatch, tmp_path):
         }).status_code == 409
 
 
+def test_resend_verification_replaces_old_token(monkeypatch, tmp_path):
+    sent = configure_email(monkeypatch)
+    monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "resend-test.sqlite3"))
+    with TestClient(app) as client:
+        registered = client.post("/api/auth/register", json={
+            "email": "resend@example.com", "password": "A-strong-password-123", "display_name": "Resend"
+        })
+        assert registered.status_code == 201
+        original_token = sent[0]
+        resent = client.post("/api/auth/resend-verification", params={"email": "resend@example.com"})
+        assert resent.status_code == 200
+        assert len(sent) == 2
+        assert client.post("/api/auth/verify-email", json={"token": original_token}).status_code == 400
+        assert client.post("/api/auth/verify-email", json={"token": sent[1]}).status_code == 200
+        unknown = client.post("/api/auth/resend-verification", params={"email": "unknown@example.com"})
+        assert unknown.status_code == 200
+        assert len(sent) == 2
+
+
 def test_totp_setup_login_and_single_use_recovery_codes(monkeypatch, tmp_path):
     sent = configure_email(monkeypatch)
     monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "totp-test.sqlite3"))
@@ -184,6 +203,16 @@ def test_totp_setup_login_and_single_use_recovery_codes(monkeypatch, tmp_path):
             "challenge_token": third_login.json()["challenge_token"], "code": recovery[0]
         })
         assert reused.status_code == 401
+
+        disabled = client.post("/api/auth/2fa/disable", headers=headers, json={
+            "password": "A-strong-password-123", "code": recovery[1]
+        })
+        assert disabled.status_code == 200
+        normal_login = client.post("/api/auth/login", json={
+            "email": "mfa@example.com", "password": "A-strong-password-123"
+        })
+        assert normal_login.status_code == 200
+        assert not normal_login.json().get("requires_2fa", False)
 
 
 def test_social_profile_posts_follow_likes_comments(monkeypatch, tmp_path):
