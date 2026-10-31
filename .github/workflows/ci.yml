@@ -89,6 +89,9 @@ jobs:
         with:
           channel: stable
           cache: true
+      - name: Generate Flutter Android platform project
+        working-directory: flutter_app
+        run: flutter create --platforms=android --project-name nile_one_human --org com.imddawsa .
       - name: Resolve Flutter dependencies
         working-directory: flutter_app
         run: flutter pub get
