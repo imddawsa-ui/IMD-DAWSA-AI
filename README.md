@@ -61,3 +61,8 @@ After the model is downloaded, local chat can run offline. Account sessions are 
 
 ## Product status
 Marketplace, payments, trading execution, embedded apps, voice/video calls, enterprise workspaces, Windows Master Studio, on-device Android inference and external social publishing remain planned or in progress. Social features currently cover text posts, follows, likes, comments and one-to-one text messaging only. External platform integrations require official APIs, approvals and user authorization. No placeholder is described as a completed integration.
+
+
+## Global public deployment readiness
+
+See [GLOBAL_DEPLOYMENT_READINESS.md](GLOBAL_DEPLOYMENT_READINESS.md) for the verified public-hosting status, zero-cost-first architecture, production release blockers and the exact owner approvals still required. The project is not yet a production-ready public multi-user AI service.
