@@ -80,3 +80,31 @@ jobs:
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+  flutter-client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - name: Resolve Flutter dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+      - name: Analyze Flutter client
+        working-directory: flutter_app
+        run: flutter analyze
+      - name: Run Flutter tests
+        working-directory: flutter_app
+        run: flutter test
+      - name: Build Android debug APK
+        working-directory: flutter_app
+        run: flutter build apk --debug
+      - name: Upload Flutter Android debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nile-one-flutter-debug-apk
+          path: flutter_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
