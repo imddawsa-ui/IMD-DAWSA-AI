@@ -91,7 +91,7 @@ jobs:
           cache: true
       - name: Generate Flutter Android platform project
         working-directory: flutter_app
-        run: flutter create --platforms=android --project-name nile_one_human --org com.imddawsa .
+        run: flutter create --platforms=android,web --project-name nile_one_human --org com.imddawsa .
       - name: Resolve Flutter dependencies
         working-directory: flutter_app
         run: flutter pub get
@@ -109,5 +109,16 @@ jobs:
         with:
           name: nile-one-flutter-debug-apk
           path: flutter_app/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Build Flutter Web release
+        working-directory: flutter_app
+        run: flutter build web --release
+      - name: Upload Flutter Web release
+        uses: actions/upload-artifact@v4
+        with:
+          name: nile-one-flutter-web-release
+          path: flutter_app/build/web/**
           if-no-files-found: error
           retention-days: 30
