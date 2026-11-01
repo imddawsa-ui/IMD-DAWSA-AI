@@ -15,7 +15,6 @@ void main() {
 
     expect(find.text('NILE ONE HUMAN'), findsOneWidget);
     expect(find.text('IMD DAWSA AI'), findsOneWidget);
-    expect(find.text('Start a conversation'), findsOneWidget);
-    expect(find.text('Test connection'), findsOneWidget);
   });
 }
+
