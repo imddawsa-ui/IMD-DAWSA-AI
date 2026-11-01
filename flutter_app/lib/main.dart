@@ -298,15 +298,31 @@ class _HomeScreenState extends State<HomeScreen> {
                       mainAxisSpacing: 10,
                       crossAxisSpacing: 10,
                       childAspectRatio: 1.58,
-                      children: const [
-                        _FeatureTile(icon: Icons.auto_awesome_rounded, title: 'AI Assistant',
-                          subtitle: 'Ask, create and explore', colors: [Color(0xFF173E5A), Color(0xFF172D49)]),
-                        _FeatureTile(icon: Icons.school_rounded, title: 'Learning Studio',
-                          subtitle: 'Learn something new', colors: [Color(0xFF34305D), Color(0xFF202746)]),
-                        _FeatureTile(icon: Icons.language_rounded, title: 'Global Language',
-                          subtitle: 'Connect across languages', colors: [Color(0xFF174B4C), Color(0xFF183A42)]),
-                        _FeatureTile(icon: Icons.lightbulb_rounded, title: 'Creative Lab',
-                          subtitle: 'Turn ideas into action', colors: [Color(0xFF4A3155), Color(0xFF292442)]),
+                      children: [
+                        _FeatureTile(icon: Icons.auto_awesome_rounded, title: 'NILE AI',
+                          subtitle: 'Assistant, models and agents', onTap: () => _showModuleInfo('NILE AI', 'AI assistant, model intelligence, voice, translation, research and agents.'), colors: [Color(0xFF173E5A), Color(0xFF172D49)]),
+                        _FeatureTile(icon: Icons.people_alt_rounded, title: 'NILE SOCIAL',
+                          subtitle: 'Messages and communities', onTap: () => _showModuleInfo('NILE SOCIAL', 'Social profiles, messaging, communities and creator tools. Backend integration is planned.'), colors: [Color(0xFF34305D), Color(0xFF202746)]),
+                        _FeatureTile(icon: Icons.shield_rounded, title: 'NILE SECURITY',
+                          subtitle: 'Privacy and protection', onTap: () => _showModuleInfo('NILE SECURITY', 'Security center, account protection and cyber defense integrations.'), colors: [Color(0xFF174B4C), Color(0xFF183A42)]),
+                        _FeatureTile(icon: Icons.code_rounded, title: 'NILE DEVELOPER',
+                          subtitle: 'Build apps and software', onTap: () => _showModuleInfo('NILE DEVELOPER', 'Developer tools, code workspace, APIs and app creation.'), colors: [Color(0xFF4A3155), Color(0xFF292442)]),
+                        _FeatureTile(icon: Icons.cloud_rounded, title: 'NILE CLOUD',
+                          subtitle: 'Compute and storage', onTap: () => _showModuleInfo('NILE CLOUD', 'Cloud services, hosting, storage and deployment management.'), colors: [Color(0xFF173E5A), Color(0xFF172D49)]),
+                        _FeatureTile(icon: Icons.show_chart_rounded, title: 'NILE TRADING',
+                          subtitle: 'Markets and risk tools', onTap: () => _showModuleInfo('NILE TRADING', 'Market research, paper trading and risk analysis. No live trades are enabled.'), colors: [Color(0xFF34305D), Color(0xFF202746)]),
+                        _FeatureTile(icon: Icons.account_balance_wallet_rounded, title: 'NILE FINANCE',
+                          subtitle: 'Money management', onTap: () => _showModuleInfo('NILE FINANCE', 'Personal finance tools and future licensed payment integrations.'), colors: [Color(0xFF174B4C), Color(0xFF183A42)]),
+                        _FeatureTile(icon: Icons.business_center_rounded, title: 'NILE BUSINESS',
+                          subtitle: 'Business operations', onTap: () => _showModuleInfo('NILE BUSINESS', 'Business workspace for customers, projects, teams and operations.'), colors: [Color(0xFF4A3155), Color(0xFF292442)]),
+                        _FeatureTile(icon: Icons.storefront_rounded, title: 'NILE MARKET',
+                          subtitle: 'Products and services', onTap: () => _showModuleInfo('NILE MARKET', 'Marketplace for products, services and digital tools.'), colors: [Color(0xFF173E5A), Color(0xFF172D49)]),
+                        _FeatureTile(icon: Icons.movie_creation_rounded, title: 'NILE MEDIA',
+                          subtitle: 'Create audio and visuals', onTap: () => _showModuleInfo('NILE MEDIA', 'Creative tools for images, video, audio and content production.'), colors: [Color(0xFF34305D), Color(0xFF202746)]),
+                        _FeatureTile(icon: Icons.menu_book_rounded, title: 'NILE KNOWLEDGE',
+                          subtitle: 'Learning and research', onTap: () => _showModuleInfo('NILE KNOWLEDGE', 'Learning, research, science and trusted knowledge services.'), colors: [Color(0xFF174B4C), Color(0xFF183A42)]),
+                        _FeatureTile(icon: Icons.public_rounded, title: 'NILE FUTURE',
+                          subtitle: 'Emerging technologies', onTap: () => _showModuleInfo('NILE FUTURE', 'Long-term research in robotics, energy, industry and advanced technology.'), colors: [Color(0xFF4A3155), Color(0xFF292442)]),
                       ],
                     ),
                     const SizedBox(height: 17),
@@ -444,6 +460,23 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
 
+  void _showModuleInfo(String title, String description) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF122238),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w900)),
+        content: Text(description, style: const TextStyle(height: 1.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('CLOSE'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _showSettings() async {
     await showModalBottomSheet<void>(
       context: context,
@@ -492,14 +525,19 @@ class _FeatureTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.colors,
+    this.onTap,
   });
   final IconData icon;
   final String title;
   final String subtitle;
   final List<Color> colors;
+  final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) => Container(
+  Widget build(BuildContext context) => InkWell(
+    onTap: onTap,
+    borderRadius: BorderRadius.circular(18),
+    child: Container(
     padding: const EdgeInsets.all(13),
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(18),
@@ -524,6 +562,7 @@ class _FeatureTile extends StatelessWidget {
           ],
         ),
       ],
+    ),
     ),
   );
 }
