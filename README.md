@@ -66,3 +66,7 @@ Marketplace, payments, trading execution, embedded apps, voice/video calls, ente
 ## Global public deployment readiness
 
 See [GLOBAL_DEPLOYMENT_READINESS.md](GLOBAL_DEPLOYMENT_READINESS.md) for the verified public-hosting status, zero-cost-first architecture, production release blockers and the exact owner approvals still required. The project is not yet a production-ready public multi-user AI service.
+
+## Approved zero-cost execution plan
+
+See [ZERO_COST_EXECUTION_PLAN.md](ZERO_COST_EXECUTION_PLAN.md) for the approved free-first architecture, delivery stages, verified limitations and remaining owner actions.
