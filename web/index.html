@@ -47,6 +47,17 @@ form{display:flex;gap:10px;margin-top:14px;align-items:stretch}textarea{flex:1;m
 footer{padding:0 20px 18px;color:#8195b3;font-size:11px}
 @media(max-width:620px){header{align-items:flex-start;flex-direction:column}.toolbar{display:grid;grid-template-columns:1fr 1fr}#endpoint{grid-column:1/-1}#token{width:100%}form{flex-direction:column}form button{min-height:46px}.msg{max-width:98%}}
 
+
+/* NILE ONE responsive command-center refinement */
+.domain-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:20px 0}
+.domain-card{position:relative;min-height:116px;padding:15px;border:1px solid var(--line);border-radius:17px;background:linear-gradient(145deg,var(--surface-raised),color-mix(in srgb,var(--surface) 88%,var(--brand-b)));overflow:hidden}
+.domain-card:after{content:"";position:absolute;width:90px;height:90px;border-radius:50%;inset:auto -28px -42px auto;background:color-mix(in srgb,var(--brand-a) 13%,transparent);filter:blur(2px)}
+.domain-card strong{display:block;font-size:14px;margin:7px 0}.domain-card p{font-size:11px;line-height:1.55;color:var(--muted);margin:0}
+.domain-icon{font-size:21px;color:var(--brand-a)}
+.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:24px 2px 8px}.section-heading h3{font-size:17px;margin:0}.section-heading span{font-size:10px;letter-spacing:.12em;color:var(--brand-a)}
+@media(max-width:720px){.domain-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.domain-card{min-height:105px;padding:12px}}
+@media(max-width:360px){.domain-grid{grid-template-columns:1fr}}
+
 /* NILE ONE visual system */
 :root{--brand-a:#27d8f2;--brand-b:#765cff;--surface:#111d30;--surface-raised:#172945;--text:#edf3ff;--muted:#a9bad2;--line:#304968}
 body{background:radial-gradient(ellipse at 10% 0%,color-mix(in srgb,var(--brand-b) 22%,transparent),transparent 38%),radial-gradient(ellipse at 90% 10%,color-mix(in srgb,var(--brand-a) 16%,transparent),transparent 34%),#080f1e;color:var(--text);transition:background .25s,color .25s}
@@ -144,6 +155,18 @@ footer{padding:4px 24px 22px}
  <article class="feature-card"><img src="./assets/learning.svg" alt="" loading="lazy"><div><strong>Learning Studio</strong><p>Build skills with a focused learning experience.</p></div></article>
  <article class="feature-card"><img src="./assets/marketplace.svg" alt="" loading="lazy"><div><strong>Marketplace</strong><p>Discover offers and grow your business.</p></div></article>
  <article class="feature-card"><img src="./assets/creative.svg" alt="" loading="lazy"><div><strong>Creative Lab</strong><p>Explore visual ideas and creative workflows.</p></div></article>
+</section>
+
+<div class="section-heading"><h3>عالم NILE ONE</h3><span>CONNECTED WORKSPACES</span></div>
+<section class="domain-grid" aria-label="NILE ONE workspaces">
+ <article class="domain-card"><span class="domain-icon">✦</span><strong>NILE AI</strong><p>مساعد ذكي ومحادثة مع الخادم والنماذج المتاحة.</p></article>
+ <article class="domain-card"><span class="domain-icon">◈</span><strong>NILE KNOWLEDGE</strong><p>مساحة المعرفة والتعلّم والبحث المنظم.</p></article>
+ <article class="domain-card"><span class="domain-icon">▣</span><strong>NILE BUSINESS</strong><p>أدوات الأعمال والسوق وإدارة العروض.</p></article>
+ <article class="domain-card"><span class="domain-icon">◎</span><strong>NILE COMMUNITY</strong><p>الملفات الاجتماعية والمنشورات والتواصل النصي.</p></article>
+ <article class="domain-card"><span class="domain-icon">⌘</span><strong>NILE DEVELOPER</strong><p>مساحة التطوير وواجهات API والتكاملات.</p></article>
+ <article class="domain-card"><span class="domain-icon">⬡</span><strong>NILE CLOUD</strong><p>ربط الخدمات والخوادم والبنية السحابية.</p></article>
+ <article class="domain-card"><span class="domain-icon">⌁</span><strong>NILE SECURITY</strong><p>إعدادات الحساب والحماية والتحقق متعدد العوامل.</p></article>
+ <article class="domain-card"><span class="domain-icon">◷</span><strong>NILE FUTURE</strong><p>مساحة التوسّع والميزات المخطط لها بوضوح.</p></article>
 </section>
 <div class="toolbar">
 <input id="endpoint" type="url" inputmode="url" placeholder="عنوان الخادم، مثال: https://api.example.com">
