@@ -9,7 +9,7 @@ from pathlib import Path
 import httpx
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -856,6 +856,29 @@ async def delete_conversations(
         raise HTTPException(status_code=401, detail="Authentication required")
     clear_conversations(user["id"] if user else None)
     return {"deleted": True}
+
+
+@app.get("/api/conversations/export")
+async def export_conversations(authorization: str | None = Header(default=None)):
+    """Export only the authenticated user's conversation history as a private JSON download."""
+    require_auth_configuration()
+    user = current_user(authorization)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    items = list_conversations(limit=100000, user_id=user["id"])
+    return JSONResponse(
+        content={
+            "schema_version": 1,
+            "exported_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "user": {"id": user["id"], "display_name": user["display_name"]},
+            "conversations": items,
+        },
+        headers={
+            "Cache-Control": "no-store, private",
+            "Content-Disposition": 'attachment; filename="zizo-ai-conversations.json"',
+            "X-Content-Type-Options": "nosniff",
+        },
+    )
 
 
 @app.get("/api/system/resources")
