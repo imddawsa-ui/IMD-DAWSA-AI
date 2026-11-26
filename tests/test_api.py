@@ -557,3 +557,31 @@ def test_restore_refuses_to_overwrite_without_explicit_force(tmp_path):
         restore_encrypted_backup(backup, target, key)
     with sqlite3.connect(target) as db:
         assert db.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='existing'").fetchone()
+
+
+def test_conversation_export_is_authenticated_private_and_user_scoped(monkeypatch, tmp_path):
+    sent = configure_email(monkeypatch)
+    monkeypatch.setattr(main.settings, "database_path", str(tmp_path / "export-test.sqlite3"))
+
+    async def fake_reply(message, history=None):
+        return "Private export test reply"
+
+    monkeypatch.setattr(main, "generate_reply", fake_reply)
+    with TestClient(app) as client:
+        alice_headers, alice = register_verified(client, sent, "export-alice@example.com", "Alice Export")
+        bob_headers, bob = register_verified(client, sent, "export-bob@example.com", "Bob Export")
+
+        assert client.get("/api/conversations/export").status_code == 401
+        assert client.post("/api/chat", headers=alice_headers, json={"message": "Alice secret"}).status_code == 200
+        assert client.post("/api/chat", headers=bob_headers, json={"message": "Bob secret"}).status_code == 200
+
+        exported = client.get("/api/conversations/export", headers=alice_headers)
+        assert exported.status_code == 200
+        assert exported.headers["cache-control"] == "no-store, private"
+        assert "attachment" in exported.headers["content-disposition"]
+        payload = exported.json()
+        assert payload["schema_version"] == 1
+        assert payload["user"]["id"] == alice["id"]
+        assert len(payload["conversations"]) == 1
+        assert payload["conversations"][0]["user_message"] == "Alice secret"
+        assert "Bob secret" not in exported.text
